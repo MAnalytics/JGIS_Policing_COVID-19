@@ -1,38 +1,373 @@
 ---
-title: "An Analytical Framework for Measuring Inequalities in Public Opinions on Policing"
-authors:
-- affiliation: 1
-  name: Monsuru Adepeju
-  orcid: 0000-0002-9006-4934
-- affiliation: 2
-  name: Fatai Jimoh
-date: "09 January 2020"
-subtitle: An assessment of COVID-19 Pandemic in Space-Time using Twitter Data
-tags:
-- Policing
-- COVID-19
-- Sentiment Analysis
-- Twitter
-- Visualization
-affiliations:
-- index: 1
-  name: Crime and Well-being Big Data Centre, Manchester Metropolitan University
-- index: 2
-  name: School of Science, Engineering and Environment, University of Salford
+title: "An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – "
+subtitle: "Assessing COVID-19 Pandemic in Space-Time using Twitter Data"
+author: "Monsuru Adepeju"
+date: '`r format(Sys.time(), "%d %B, %Y (%H:%M)")`'
+output:
+  html_document: 
+    toc: yes
+    pandoc_args: [
+      "+RTS", "-K64m",
+      "-RTS"
+    ]
+  pdf_document:
+    fig_crop: no
+    highlight: kate
+    # keep_tex: yes
+    # latex_engine: xelatex
+    number_sections: yes
+fontsize: 10pt
 ---
 
-## Statement of Need
+_This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', submitted to JGIS_
 
-This document consists of the source codes that describes
-In social and behavioural sciences, longitudinal clustering is widely used for identifying groups of individual trends that correspond to certain developmental processes over time. Whilst popular clustering techniques, such as k-means, are suited for identifying spherical clusters , there has been little attempt to modify such methods to identify alternative forms of cluster, such as those that represent linear growth over time (i.e. directionally-homogeneous clusters). To address this shortcoming, we introduce `Anchored k-medoids`, a package referred to as `Ak-medoids`, which implements a medoid-based expectation maximisation (MEM) procedure within a classical k-means clustering framework.  The package includes functions to assist in the manipulation of longitudinal data sets prior to the clustering procedure, and the visualisation of solutions post-procedure. The potential application areas of `Ak-medoids` include criminology, transport, epidemiology and brain imaging.
+# Introduction
 
-## Design and implementation
+The paper (mentioned above) proposes an analytical framework for measuring the inequalities in the public opinion on policing. The aim of this document is to allow users to replicate the outputs as presented in the paper using their own datasets. The document is divided into different sections which complete different component of the analysis.
 
-Previous studies have taken advantage of 
-```r
-m = 3
-t=5
-y <- m * t
-print (y)
+## Configuration and library loading
+
+Configure the script here. As well as making sure all the libraries used below have been installed, you need to:
+
+ 1. Set your working directory (the `WORKING_DIR` variable below) to be the location of this script.
+ 2. Install all the libraries required to complete the analysis.
+ 
+
+```{r initialise, message=FALSE}
+
+# This directory needs to be set to the location of this script
+WORKING_DIR <- 'C:/R/Github/JGIS_Policing_COVID-19'
+setwd(WORKING_DIR)
+
+library(twitteR) #for setting up Twitter authorization
+library(rtweet) #for creating Twitter Authorization Token(S).
+library(dplyr) #for data manipulation and analysis
+
 ```
+ 
+# Downloading Twitter Data
+
+All new developers must apply for a developer account to access Twitter APIs (see [here](https://developer.twitter.com/en/apply-for-access)). Once approved, you follow the instruction on this [page](https://developer.twitter.com/en/docs/twitter-api/getting-started/guide). Within the developer App, you will be provided a set of API Keys (also known as Consumer Keys). You will also have the chance to generate a set of Access Tokens that can be used to make tweet requests, and a Bearer Token that can be used to authenticate endpoints. Below, we demonstrate how we used one of the Author's keys and token to download tweets within a defined geographical coverage. The tweets needed for this analysis are tweets that include the keywords or hashtages: 'police', 'policing', and 'law enforcement(s)' (Note: the `eval=FALSE` argument below is to skip the chunk of the script). Modify the chunk as appropriate.
+
+
+```{r, message=FALSE, eval=FALSE}
+
+#define keys and tokens
+consumer_key <- 'rJWorDnMoARYE7OUTqa****' 
+consumer_secret <- 'dUJktwlOwdbaUNB15z2Yw4HI3piOd1aTevAD******'
+access_token <- '1108852279434715136-4IpdsZ2t69wcj0GZ3r*******'
+access_secret <- 'eX78KEUNtaU6GZ0wFay5lafhbzeZhuLzHkq7********'
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
+token <- create_token(
+  app = "UK2019", #App name
+  consumer_key = consumer_key,
+  consumer_secret = consumer_secret)
+
+#define the keywords to search in tweets
+keywords <- c("police", "policing", "law enforcement", "law enforcements")
+
+#tweets holder
+all_Tweets <- NULL
+
+#Given a party  
+for(i in seq_len(length(keywords))){ #i<-1
+  
+  tweets_g1 <- NULL
+  #tweets_g2 <- NULL
+  
+  tweets_g1 <- search_tweets(q=keywords[i],  n=17500, type="recent", include_rts=TRUE, 
+                             token = token, lang="en",geocode='53.805,-4.242,350mi') 
+  #the lat, long and rad above defines the geographical coverage within which the download is performed.
+  if(nrow(tweets_g1)!=0){
+    tweets_g1 <- tweets_g1 %>% dplyr::mutate(class=keywords[i])
+    all_Tweets <- rbind(all_Tweets, tweets_g1)  #all_Tweets<-NULL
+  }
+
+  flush.console()
+  print(paste(nrow(tweets_g1), nrow(tweets_g1), sep="||"))
+  print("waiting for 15.5 minutes")
+  testit(960) #wait for another 15 minutes before downloading again
+}
+
+#save the results
+write_as_csv(all_Tweets, paste("only_policeTweet_set_", 1, "_.csv", sep=""), na="NA", fileEncoding = "UTF-8")
+#change the value "1" for subsequent downloading.
+
+```
+
+# Geocoding
+
+The downloaded tweet files are read into RStudio and appended. Next, we geocode each tweets to its respective police force areas (PFA) using the [`PFA-Location lookup`](./data/PoliceForce_location.csv) table. Import other necessary files.
+
+```{r, eval = FALSE}
+#read in downloaded tweets
+data_sample1 <- read.table(file="only_policeTweet_set_1.csv", sep=",", head=TRUE)
+.
+.
+data_sampleN <- read.table(file="only_policeTweet_set_N.csv", sep=",", head=TRUE)
+
+#combine data
+data <- rbind(data_sample1, ....., data_sampleN)
+
+#format date field
+data$created_at <- as.Date(data$created_at)
+
+#create and append time steps (or periods)
+data_ <- data %>% 
+  dplyr::mutate(period = if_else((created_at >= "2020-10-20" & created_at <= "2020-11-19"), "Period1",
+                                 if_else(created_at >= "2020-11-20" & created_at <= "2020-12-19", "Period2",
+                                         if_else(created_at >= "2020-12-20" & created_at <= "2021-01-19", "Period3", "0"))))             
+#house cleaning
+rm(list=ls()[! ls() %in% 
+  c("data_")])
+
+#read in the PFA-location lookup table
+location <- read.csv(file="PoliceForce_location.csv", sep=",", head=TRUE)
+
+#preview
+head(location)
+#check length
+nrow(location)
+
+#summary of location table
+table(location$policeForce)
+
+#Subset only the tweets needed (i.e. Organic tweets and Replies)
+data1 = data_ %>%
+  dplyr::arrange(status_id) %>%
+  dplyr::filter(!duplicated(status_id))%>%
+  dplyr::filter(is_retweet==FALSE)%>% #remove retweets
+  dplyr::mutate(location1= gsub(",.*$", "", location)) %>% #add city name
+  dplyr::select(-c(location))%>%
+  dplyr::rename(location=location1)
+
+head(data1)
+
+#geocoding
+data_1 <- data1 %>% 
+  inner_join(location)
+
+#house cleaning
+rm(list=ls()[! ls() %in% 
+               c("data_1")])
+
+#get names of policing regions
+Pf_names_regions <- read.table(file="Regions.csv", sep=",", head=TRUE)
+Pf_names_regions_uni <- Pf_names_regions$Police.Force
+
+#clean house
+rm(list=ls()[! ls() %in% 
+               c("data_1", "Pf_names_regions_uni", "fix.contractions", "removeSpecialChars")])
+
+#loop through periods
+periods <- unique(data_1$period)[2:4]
+
+```
+
+
+# Data Cleaning, Tidying and Sentiment Analysis
+
+```{r, eval=FALSE}
+
+#clean tweet and write data 
+#--------------------------------
+for(i in 1:length(Pf_names_regions_uni)){ #i=2
+
+  tweet_container_afinn <- NULL
+  
+  for(z in 1:length(periods)){ #z = 1
+    
+    #use sample of London tweets (25%)
+    if(Pf_names_regions_uni[i]=="Metropolitan Police"){
+      #clean tweets
+      placeTwt <- data_1 %>% 
+        dplyr::filter(period == periods[z])%>%
+        dplyr::filter(policeForce==Pf_names_regions_uni[i]) %>%
+        dplyr::select(text) %>%
+        dplyr::mutate(text = gsub("http://*|https://*|https*|\n*|*>|<*","", text)) %>%
+        mutate(text=str_replace_all(text, "[[:punct:]]", " "))
+      
+      if(z != 3){ #to be removed for later.
+        set.seed(1000)
+        placeTwt <- sample_frac(placeTwt, 0.25)
+      }
+      
+      if(z == 3){ #to be removed for later.
+        set.seed(1000)
+        placeTwt <- sample_frac(placeTwt, 0.25)
+      }
+    }
+    
+    if(Pf_names_regions_uni[i]!="Metropolitan Police"){
+      #clean tweets
+      placeTwt <- data_1 %>% 
+        dplyr::filter(period == periods[z])%>%
+        dplyr::filter(policeForce==Pf_names_regions_uni[i]) %>%
+        dplyr::select(text) %>%
+        dplyr::mutate(text = gsub("http://*|https://*|https*|\n*|*>|<*","", text)) %>%
+        mutate(text=str_replace_all(text, "[[:punct:]]", " "))
+    }
+
+    #more cleaning
+    placeTwt <- unlist(placeTwt) %>% stringr::str_remove(pattern = "t co.*")
+    
+    #to detect the similarities
+    placeTwt <- data.frame(cbind(text1=placeTwt, text2=c("NULL", placeTwt[1:length(placeTwt)-1])))
+    dim(placeTwt)
+    head(placeTwt)
+    
+    #similarities
+    similarities <- stringsim(placeTwt$text1,placeTwt$text2,method='lcs', p=0.25)
+    
+    placeTwt <- placeTwt[, 1]
+    dim(placeTwt) #head(placeTwt)
+    placeTwt <- placeTwt[which(similarities!=1)]
+    
+    placeTwt <- data.frame(text=placeTwt)
+    
+    #remove emoticons
+    placeTwt$text <- sapply(placeTwt,function(row) iconv(row, "latin1", "ASCII", sub=""))
+    
+    placeTwt$text <- sapply(placeTwt , fix.contractions)
+    
+    #remove special characters
+    placeTwt$text <- sapply(placeTwt$text, removeSpecialChars)
+    
+    #convert all text to lower case
+    placeTwt$text <- sapply(placeTwt$text, tolower)
+    
+    placeTwt$text <- sapply(placeTwt,function(row) iconv(row, "latin1", "ASCII", sub=""))
+    
+    #detect pandemic references
+    #separate text into two: (1) has no pandemic-keyword, (2) has pandemic-keyword 
+    placeTwt_keyword_exist <- data.frame(placeTwt$text) %>%
+      dplyr::filter(stringr::str_detect(text, 'pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected', negate=FALSE))
+    #head(placeTwt_keyword_exist), #nrow(placeTwt_keyword_exist)
+    
+    placeTwt_no_keyword <- data.frame(placeTwt$text) %>%
+      dplyr::filter(stringr::str_detect(text, 'pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected', negate=TRUE))
+    
+    #create the id and drop text
+    placeTwt_keyword_exist$ID <- seq.int(nrow(placeTwt_keyword_exist)) #create an id field
+    
+    #get negation scores
+    token_neg_exist <- as_tibble(placeTwt_keyword_exist) %>%
+      #unnest_tokens(word, text)%>%
+      unnest_tokens(bigram, text, token = "ngrams", n = 2)%>%
+      separate(bigram, c("word1", "word2"), sep = " ")%>%
+      as.data.frame() %>%
+      #filter the preceeding by the 'negation' word
+      dplyr::filter(word1 %in% c("not", "never", "no", "without")) %>%
+      dplyr::mutate(neg = paste(word1, word2, sep=" ")) %>% #get sentiment score
+      dplyr::rename(word  = word2)%>%
+      left_join(get_sentiments("afinn")) %>% #
+      dplyr::select(ID, neg, value)%>%
+      dplyr::mutate(value2 = value * 2)%>%#reverse the score (and multiply by 2)
+      dplyr::mutate(value = value2)%>%
+      dplyr::select(-c(value2))%>%
+      dplyr::rename(word=neg)%>%
+      dplyr::filter(!is.na(value))%>%
+      mutate(pandem_keyword="exist")%>%
+      mutate(country=Pf_names_regions_uni[i])%>%
+      mutate(Period = periods[z])
+    
+    placeTwt_all_DATA_afinn_exist <- placeTwt_keyword_exist %>%
+      unnest_tokens(word, text, drop = FALSE) %>%
+      inner_join(get_sentiments("afinn")) %>% #join with the lexicon
+      mutate(pandem_keyword="exist")%>%
+      mutate(country=Pf_names_regions_uni[i])%>%
+      mutate(Period = periods[z])%>% 
+      dplyr::select(-c(text))#drop text
+    
+    #join table with those including negation words
+    placeTwt_all_DATA_afinn_exist <- data.frame(rbind(placeTwt_all_DATA_afinn_exist,
+                                                      token_neg_exist))
+  
+    #create the sentiment data (bing)
+    placeTwt_no_keyword$ID <- seq.int(nrow(placeTwt_no_keyword)) #create an id field
+    #get an ngram (2-ngrame)
+    
+    #get negation scores
+    token_neg_no_keyword <- as_tibble(placeTwt_no_keyword) %>%
+      #unnest_tokens(word, text)%>%
+      unnest_tokens(bigram, text, token = "ngrams", n = 2)%>%
+      separate(bigram, c("word1", "word2"), sep = " ")%>%
+      as.data.frame() %>%
+      #filter the preceeding by the 'negation' word
+      dplyr::filter(word1 %in% c("not", "never", "no", "without")) %>%
+      dplyr::mutate(neg = paste(word1, word2, sep=" ")) %>% #get sentiment score
+      dplyr::rename(word  = word2)%>%
+      left_join(get_sentiments("afinn")) %>% #
+      dplyr::select(ID, neg, value)%>%
+      dplyr::mutate(value2 = value * 2)%>%#reverse the score (and multiply by 2)
+      dplyr::mutate(value = value2)%>%
+      dplyr::select(-c(value2))%>%
+      dplyr::rename(word=neg)%>%
+      dplyr::filter(!is.na(value))%>%
+      mutate(pandem_keyword="exist")%>%
+      mutate(country=Pf_names_regions_uni[i])%>%
+      mutate(Period = periods[z])
+    
+    placeTwt_all_DATA_afinn_absent <- placeTwt_no_keyword %>%
+      unnest_tokens(word, text, drop = FALSE) %>%
+      inner_join(get_sentiments("afinn")) %>% #join with the lexicon
+      mutate(pandem_keyword="absent")%>%
+      mutate(country=Pf_names_regions_uni[i])%>%
+      mutate(Period = periods[z])%>%
+      dplyr::select(-c(text))
+    
+    #join table with those including negation words
+    placeTwt_all_DATA_afinn_absent <- data.frame(rbind(placeTwt_all_DATA_afinn_absent,
+                                                       token_neg_no_keyword))
+    
+    placeTwt_all_DATA_afinn_observed <- data.frame(rbind(placeTwt_all_DATA_afinn_exist, placeTwt_all_DATA_afinn_absent))
+    
+    tweet_container_afinn <- rbind(tweet_container_afinn, placeTwt_all_DATA_afinn_observed)
+    
+  }
+  
+  flush.console()
+  print(paste(i, z, " | "))
+  
+  write.table(tweet_container_afinn, file = paste("C:/Users/55131065/Desktop/downloadTweets/outputs/", "police_cleaned_", Pf_names_regions_uni[i], "_all_DATA_afinn_observed_ts6", ".csv", sep=""),
+              sep=",", row.names = F)
+  
+  
+}
+
+
+```
+
+
+
+
+
+
+is read in. The joined to the `location` field of the tweets.
+
+
+
+in order to start downloading the tweets.
+
+
+
+can begin to use our standard APIs to download the publicly available tweets. To download the tweets 
+
+
+
+In order to download public available tweets, a user needs to create an
+
+
+
+
+Get started with Twitter APIs and tools
+
+Apply for access
+ and our new premium APIs.
+
+
+
+
+
 
