@@ -1,32 +1,38 @@
 ---
-title: Akmedoids R package for generating directionally-homogeneous clusters of longitudinal data sets
-date: "09 January 2020"
-bibliography: paper.bib
-affiliations:
-- index: 1
-  name: Crime and Well-being Big Data Centre, Manchester Metropolitan University
+title: "An Analytical Framework for Measuring Inequalities in Public Opinions on Policing"
 authors:
 - affiliation: 1
   name: Monsuru Adepeju
   orcid: 0000-0002-9006-4934
-- affiliation: 1
-  name: Samuel Langton
-  orcid: 0000-0002-1322-1553
-- affiliation: 1
-  name: Jon Bannister
-  orcid: 0000-0002-1350-510X
+- affiliation: 2
+  name: Fatai Jimoh
+date: "09 January 2020"
+subtitle: An assessment of COVID-19 Pandemic in Space-Time using Twitter Data
 tags:
-- Anchored k-medoids
-- k-means
-- crime
-- longitudinal clustering
-- long-term trends
+- Policing
+- COVID-19
+- Sentiment Analysis
+- Twitter
+- Visualization
+affiliations:
+- index: 1
+  name: Crime and Well-being Big Data Centre, Manchester Metropolitan University
+- index: 2
+  name: School of Science, Engineering and Environment, University of Salford
 ---
 
-# Statement of Need
+## Statement of Need
 
-In social and behavioural sciences, longitudinal clustering is widely used for identifying groups of individual trends that correspond to certain developmental processes over time. Whilst popular clustering techniques, such as k-means, are suited for identifying spherical clusters [@GenoFali:2010; @Curman:2015], there has been little attempt to modify such methods to identify alternative forms of cluster, such as those that represent linear growth over time (i.e. directionally-homogeneous clusters). To address this shortcoming, we introduce `Anchored k-medoids`, a package referred to as `Ak-medoids`, which implements a medoid-based expectation maximisation (MEM) procedure within a classical k-means clustering framework.  The package includes functions to assist in the manipulation of longitudinal data sets prior to the clustering procedure, and the visualisation of solutions post-procedure. The potential application areas of `Ak-medoids` include criminology, transport, epidemiology and brain imaging.
+This document consists of the source codes that describes
+In social and behavioural sciences, longitudinal clustering is widely used for identifying groups of individual trends that correspond to certain developmental processes over time. Whilst popular clustering techniques, such as k-means, are suited for identifying spherical clusters , there has been little attempt to modify such methods to identify alternative forms of cluster, such as those that represent linear growth over time (i.e. directionally-homogeneous clusters). To address this shortcoming, we introduce `Anchored k-medoids`, a package referred to as `Ak-medoids`, which implements a medoid-based expectation maximisation (MEM) procedure within a classical k-means clustering framework.  The package includes functions to assist in the manipulation of longitudinal data sets prior to the clustering procedure, and the visualisation of solutions post-procedure. The potential application areas of `Ak-medoids` include criminology, transport, epidemiology and brain imaging.
 
-# Design and implementation
+## Design and implementation
 
 Previous studies have taken advantage of 
+```r
+m = 3
+t=5
+y <- m * t
+print (y)
+```
+
