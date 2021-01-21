@@ -2,16 +2,19 @@
 
 ## Assessing COVID-19 Pandemic in Space-Time using Twitter Data
 
-***Authors: Monsuru Adepeju, Fatai Jimoh***
+_Authors: Monsuru Adepeju, Fatai Jimoh_
 
 This repository contains the source code that accompanies the following paper:
 
-```r
-Adepeju, M. and Jimoh, F (2021) An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing - 
-Assessing COVID-19 Pandemic in Space-Time using Twitter Data. Submitted to the JGIS.`
-```
+Adepeju, M. and Jimoh, F (2021) 
+An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing - 
+Assessing COVID-19 Pandemic in Space-Time using Twitter Data. 
+_JGIS_.
 
-The empirical work outlined here can be conducted, using the R source code: `OP_Source_Code.Rmd`
 
-Due to the ***Twitter's Developer Agreement and Policy***, we will not be able to share any datasets, but we are confident that the source codes should run smoothtly if a user download the Twitter dataset using the R packages and procedures that we recommended in the `OP_Source_Code.Rmd` document.
+The empirical work outlined here can be conducted, using the R source code: [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd)
+
+Due to the `Twitter's Developer Agreement and Policy`, we will not be able to share any datasets, but we are confident that the source codes should run smoothtly if a user download the Twitter datasets following our instructions and recommended [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd). 
+
+For any queries, please contact us via the email: `m.adepeju@mmu.ac.uk`.
 
