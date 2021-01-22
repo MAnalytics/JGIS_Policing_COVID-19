@@ -381,6 +381,10 @@ summary {
 <li><a href="#downloading-twitter-data">Downloading Twitter Data</a></li>
 <li><a href="#geocoding">Geocoding</a></li>
 <li><a href="#data-cleaning-tidying-and-sentiment-analysis">Data Cleaning, Tidying and Sentiment Analysis</a></li>
+<li><a href="#compute-the-opinion-scores-and-p-values">Compute the Opinion Scores and p-values</a></li>
+<li><a href="#plotting">Plotting</a><ul>
+<li><a href="#radar-chart">Radar chart</a></li>
+</ul></li>
 </ul>
 </div>
 
@@ -401,7 +405,29 @@ setwd(WORKING_DIR)
 
 library(twitteR) #for setting up Twitter authorization
 library(rtweet) #for creating Twitter Authorization Token(S).
-library(dplyr) #for data manipulation and analysis</code></pre>
+library(dplyr) #for data manipulation and analysis
+library(colormap)
+library(fmsb)
+library(tidyr)
+library(radarchart)
+library(grDevices)
+library(plotly)
+library(webshot)
+library(rgdal)
+library(sf)
+library(stringr)
+library(tidytext)
+library(reshape2)
+library(stringdist)
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(ggradar)
+library(RColorBrewer)
+library(ggpubr)
+library(see)
+library(viridis)
+library(likert)</code></pre>
 </div>
 </div>
 <div id="downloading-twitter-data" class="section level1">
@@ -505,23 +531,26 @@ rm(list=ls()[! ls() %in%
 
 #get names of policing regions
 Pf_names_regions &lt;- read.table(file=&quot;Regions.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+
+#collate names of PFAs
 Pf_names_regions_uni &lt;- Pf_names_regions$Police.Force
 
-#clean house
+#house cleaning
 rm(list=ls()[! ls() %in% 
                c(&quot;data_1&quot;, &quot;Pf_names_regions_uni&quot;, &quot;fix.contractions&quot;, &quot;removeSpecialChars&quot;)])
 
-#loop through periods
+#get the time steps
 periods &lt;- unique(data_1$period)[2:4]</code></pre>
 </div>
 <div id="data-cleaning-tidying-and-sentiment-analysis" class="section level1">
 <h1>Data Cleaning, Tidying and Sentiment Analysis</h1>
-<pre class="r"><code>#clean tweet and write data 
+<pre class="r"><code>#given a police force area
 #--------------------------------
-for(i in 1:length(Pf_names_regions_uni)){ #i=2
+for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
 
   tweet_container_afinn &lt;- NULL
   
+  #given a time step (period)
   for(z in 1:length(periods)){ #z = 1
     
     #use sample of London tweets (25%)
@@ -533,16 +562,8 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
         dplyr::select(text) %&gt;%
         dplyr::mutate(text = gsub(&quot;http://*|https://*|https*|\n*|*&gt;|&lt;*&quot;,&quot;&quot;, text)) %&gt;%
         mutate(text=str_replace_all(text, &quot;[[:punct:]]&quot;, &quot; &quot;))
-      
-      if(z != 3){ #to be removed for later.
         set.seed(1000)
         placeTwt &lt;- sample_frac(placeTwt, 0.25)
-      }
-      
-      if(z == 3){ #to be removed for later.
-        set.seed(1000)
-        placeTwt &lt;- sample_frac(placeTwt, 0.25)
-      }
     }
     
     if(Pf_names_regions_uni[i]!=&quot;Metropolitan Police&quot;){
@@ -563,7 +584,7 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
     dim(placeTwt)
     head(placeTwt)
     
-    #similarities
+    #filter duplicates based on the similarities index
     similarities &lt;- stringsim(placeTwt$text1,placeTwt$text2,method=&#39;lcs&#39;, p=0.25)
     
     placeTwt &lt;- placeTwt[, 1]
@@ -585,19 +606,18 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
     
     placeTwt$text &lt;- sapply(placeTwt,function(row) iconv(row, &quot;latin1&quot;, &quot;ASCII&quot;, sub=&quot;&quot;))
     
-    #detect pandemic references
-    #separate text into two: (1) has no pandemic-keyword, (2) has pandemic-keyword 
+    #detect tweets with pandemic keywords
     placeTwt_keyword_exist &lt;- data.frame(placeTwt$text) %&gt;%
-      dplyr::filter(stringr::str_detect(text, &#39;pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected&#39;, negate=FALSE))
-    #head(placeTwt_keyword_exist), #nrow(placeTwt_keyword_exist)
-    
+    dplyr::filter(stringr::str_detect(text,&#39;pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected&#39;, negate=FALSE))
+    #detect tweets with no pandemic keywords
     placeTwt_no_keyword &lt;- data.frame(placeTwt$text) %&gt;%
       dplyr::filter(stringr::str_detect(text, &#39;pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected&#39;, negate=TRUE))
     
-    #create the id and drop text
-    placeTwt_keyword_exist$ID &lt;- seq.int(nrow(placeTwt_keyword_exist)) #create an id field
+    #create the id field and drop text field
+    placeTwt_keyword_exist$ID &lt;- seq.int(nrow(placeTwt_keyword_exist)) 
     
-    #get negation scores
+    #do sentiment analysis and also detect negated sentiment for 
+    #tweets with pandemic keywords
     token_neg_exist &lt;- as_tibble(placeTwt_keyword_exist) %&gt;%
       #unnest_tokens(word, text)%&gt;%
       unnest_tokens(bigram, text, token = &quot;ngrams&quot;, n = 2)%&gt;%
@@ -626,7 +646,7 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
       mutate(Period = periods[z])%&gt;% 
       dplyr::select(-c(text))#drop text
     
-    #join table with those including negation words
+    #create the id field and drop text field
     placeTwt_all_DATA_afinn_exist &lt;- data.frame(rbind(placeTwt_all_DATA_afinn_exist,
                                                       token_neg_exist))
   
@@ -634,7 +654,8 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
     placeTwt_no_keyword$ID &lt;- seq.int(nrow(placeTwt_no_keyword)) #create an id field
     #get an ngram (2-ngrame)
     
-    #get negation scores
+    #do sentiment analysis and also detect negated sentiment for 
+    #tweets with no pandemic keywords
     token_neg_no_keyword &lt;- as_tibble(placeTwt_no_keyword) %&gt;%
       #unnest_tokens(word, text)%&gt;%
       unnest_tokens(bigram, text, token = &quot;ngrams&quot;, n = 2)%&gt;%
@@ -663,7 +684,7 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
       mutate(Period = periods[z])%&gt;%
       dplyr::select(-c(text))
     
-    #join table with those including negation words
+    #join the two observed sentiment document (OSD) documents
     placeTwt_all_DATA_afinn_absent &lt;- data.frame(rbind(placeTwt_all_DATA_afinn_absent,
                                                        token_neg_no_keyword))
     
@@ -676,17 +697,512 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=2
   flush.console()
   print(paste(i, z, &quot; | &quot;))
   
-  write.table(tweet_container_afinn, file = paste(&quot;C:/Users/55131065/Desktop/downloadTweets/outputs/&quot;, &quot;police_cleaned_&quot;, Pf_names_regions_uni[i], &quot;_all_DATA_afinn_observed_ts6&quot;, &quot;.csv&quot;, sep=&quot;&quot;),
+  #write the OSD for the current PFA
+  write.table(tweet_container_afinn, file = paste(&quot;C:/Users/55131065/Desktop/downloadTweets/outputs/&quot;, 
+                                                  &quot;police_cleaned_&quot;, Pf_names_regions_uni[i], &quot;_all_DATA_afinn_observed_ts&quot;, 
+                                                  &quot;.csv&quot;, sep=&quot;&quot;),
               sep=&quot;,&quot;, row.names = F)
   
-  
 }</code></pre>
-<p>is read in. The joined to the <code>location</code> field of the tweets.</p>
-<p>in order to start downloading the tweets.</p>
-<p>can begin to use our standard APIs to download the publicly available tweets. To download the tweets</p>
-<p>In order to download public available tweets, a user needs to create an</p>
-<p>Get started with Twitter APIs and tools</p>
-<p>Apply for access and our new premium APIs.</p>
+</div>
+<div id="compute-the-opinion-scores-and-p-values" class="section level1">
+<h1>Compute the Opinion Scores and p-values</h1>
+<p>This chunk computes:</p>
+<ol style="list-style-type: lower-roman">
+<li>the opinion score of each tweet,</li>
+<li>then resultant opinion scores of each PFA</li>
+<li>Derive the expected sentiment document (ESD)</li>
+<li>Do randomization testing and compute the p-values</li>
+</ol>
+<p>The key outputs of this chunk are the:</p>
+<ol style="list-style-type: lower-alpha">
+<li><code>Observation</code> tables showing the computed OP scores across PFAs and time steps,</li>
+<li><code>P-value</code> tables showing the statistical significant values based on N replications, and the</li>
+<li><code>Position</code> table that describe the position of an observed OP score relative to the mean expectation.</li>
+</ol>
+<pre class="r"><code>#names of policing region
+regions &lt;- c(&quot;North West&quot;, &quot;North East&quot;,&quot;Yorkshire and the Humber&quot;,
+             &quot;West Midlands&quot;,&quot;East Midlands&quot;,&quot;Eastern&quot;,
+             &quot;Wales&quot;, &quot;South West&quot;,&quot;South East&quot;)
+
+#start
+t1 &lt;- Sys.time()
+
+op &lt;- par(mfrow = c(2,2),
+          oma = c(5,4,0,0) + 0.5,
+          mar = c(0,0,4,4) + 0.5)
+
+
+#all_UK_bing_combined &lt;- NULL
+all_Regional_afinn_combined &lt;- NULL
+all_pvalueS_1 &lt;- NULL
+all_pvalueS_2 &lt;- NULL
+all_pvalueS_3 &lt;- NULL
+
+all_p_signs_1 &lt;- matrix(0, 42, 3)
+all_p_signs_2 &lt;- matrix(0, 42, 3)
+all_p_signs_3 &lt;- matrix(0, 42, 3)
+
+init &lt;- 0
+#generate the expected and observed for all regions
+
+#loop throug region
+for(i in 1:length(regions)){ #i=1
+
+  subsetP &lt;- Pf_names_regions %&gt;% 
+    filter(Regions == regions[i])
+  
+  Region &lt;- regions[i]
+  
+  #UK_bing_combined &lt;- NULL
+  Regional_afinn_combined &lt;- NULL
+  
+  for(j in 1:nrow(subsetP)) {#j=1
+    
+    init &lt;- init + 1
+    
+    #read in the OSD
+    UK_afinn_read &lt;- read.table(file = paste(&quot;C:/Users/55131065/Desktop/downloadTweets/outputs/&quot;, 
+                                             &quot;police_cleaned_&quot;, subsetP$Police.Force[j],&quot;_all_DATA_afinn_observed_ts&quot;, 
+                                             &quot;.csv&quot;, sep=&quot;&quot;), sep=&quot;,&quot;, head=TRUE)
+    
+    #compute a unique sentiment for each tweet
+    UK_afinn_read &lt;- UK_afinn_read %&gt;% 
+      dplyr::group_by(Period, country, pandem_keyword, ID)%&gt;%
+      dplyr::summarise(sentiment_score = sum(value))%&gt;%
+      dplyr::filter(sentiment_score != 0) %&gt;%
+      dplyr::mutate(sentiment = if_else(sentiment_score &gt; 0, &quot;positive&quot;, &quot;negative&quot;))%&gt;%
+      dplyr::select(-c(sentiment_score))%&gt;%
+      ungroup %&gt;%
+      dplyr::mutate(word = &quot;word&quot;)%&gt;%
+      dplyr::select(ID, word, sentiment, pandem_keyword,country,Period)
+    
+    head(UK_afinn_read)
+    
+    unique(UK_afinn_read$pandem_keyword)
+    unique(UK_afinn_read$Period)
+    #word sentiment pandem_keyword  country
+  
+    #create Expected Ssentiment Document
+    #compute the probability of observed from the &#39;absent&#39; group
+    #generate the sentiment list based on the prob.
+    #assign the &#39;exist&#39; group with new sentiments based on the prob
+    #then plot the expected and observed.
+    
+    periods &lt;- unique(UK_afinn_read$Period)
+    
+    container2_holder &lt;- NULL
+    
+    for(y in 1:length(periods)){  #y&lt;-1
+      
+      UK_afinn_read_subset &lt;- UK_afinn_read %&gt;%
+        dplyr::filter(Period == periods[y])
+      
+      #--------------------------------------
+      #randomization testing (replicas can be reduced to e.g. 99 for runtime)
+      esd_simulated &lt;- net_sentiment_simulation(data = UK_afinn_read_subset, replicas=999)
+      
+      
+      #compute the observed from the original data
+      UK_afinn_OSD &lt;- UK_afinn_read_subset %&gt;% 
+        dplyr::select(ID, word, sentiment, pandem_keyword, country)
+
+      UK_afinn_OSD &lt;-  UK_afinn_OSD %&gt;%
+        #filter(country != &quot;NA&quot; &amp; !sentiment %in% c(&quot;positive&quot;, &quot;negative&quot;)) %&gt;%
+        count(sentiment, country) %&gt;%
+        group_by(country, sentiment) %&gt;%
+        summarise(sentiment_sum = sum(n)) %&gt;% #here is where to deduct the negation
+        ungroup()
+      
+      #calculate % sentiment
+      UK_afinn_OSD_ = UK_afinn_OSD %&gt;% 
+        group_by(country) %&gt;%
+        dplyr::mutate(total=sum(sentiment_sum))%&gt;%
+        mutate(pct=round((sentiment_sum/total)*100, digits=2))
+      
+      UK_afinn_OSD_ = data.frame(dcast(UK_afinn_OSD_, sentiment ~ country))
+      
+      UK_afinn_2_OSD = UK_afinn_OSD_ %&gt;% gather(Country, valname, -sentiment) %&gt;% 
+        spread(sentiment, valname)%&gt;%
+        dplyr::rename(negative_OSD = negative)%&gt;%
+        dplyr::rename(positive_OSD=positive) %&gt;%
+        mutate(net_sentiment_OSD =  positive_OSD -  negative_OSD)
+      
+      #contruct the confidence interval (ave +/- z * se) and compute p-value
+      if(y == 1){
+        if(UK_afinn_2_OSD$net_sentiment_OSD &gt; mean(esd_simulated$net_sentiment_ESD)){
+          all_p_signs_1[init, 1] &lt;- &quot;TRUE&quot;
+        }
+        all_p_signs_1[init, 2] &lt;- subsetP$Police.Force[j]
+        all_p_signs_1[init, 3] &lt;- regions[i]
+      }
+      
+      if(y == 2){
+        if(UK_afinn_2_OSD$net_sentiment_OSD &gt; mean(esd_simulated$net_sentiment_ESD)){
+          all_p_signs_2[init, 1] &lt;- &quot;TRUE&quot;
+        }
+        all_p_signs_2[init, 2] &lt;- subsetP$Police.Force[j]
+        all_p_signs_2[init, 3] &lt;- regions[i]
+      }
+      
+      if(y == 3){
+        if(UK_afinn_2_OSD$net_sentiment_OSD &gt; mean(esd_simulated$net_sentiment_ESD)){
+          all_p_signs_3[init, 1] &lt;- &quot;TRUE&quot;
+        }
+        all_p_signs_3[init, 2] &lt;- subsetP$Police.Force[j]
+        all_p_signs_3[init, 3] &lt;- regions[i]
+      }
+      
+      beat_left &lt;- length(which(esd_simulated$net_sentiment_ESD &gt;  UK_afinn_2_OSD$net_sentiment_OSD))
+      beat_right &lt;- length(which(esd_simulated$net_sentiment_ESD &lt;  UK_afinn_2_OSD$net_sentiment_OSD))
+      Sbeat &lt;- min(c(beat_left, beat_right))
+      pvalue_sentiment &lt;- (Sbeat + 1)/(length(esd_simulated$net_sentiment_ESD) + 1)
+      
+      if(y == 1){
+        all_pvalueS_1 &lt;- rbind(all_pvalueS_1, cbind(pvalue_sentiment, subsetP$Police.Force[j], regions[i]))
+      }
+      
+      if(y == 2){
+        all_pvalueS_2 &lt;- rbind(all_pvalueS_2, cbind(pvalue_sentiment, subsetP$Police.Force[j], regions[i]))
+      }
+      
+      if(y == 3){
+        all_pvalueS_3 &lt;- rbind(all_pvalueS_3, cbind(pvalue_sentiment, subsetP$Police.Force[j], regions[i]))
+      }
+
+      mean_exp &lt;- data.frame(matrix(colMeans(esd_simulated[,2:ncol(esd_simulated)]),1,))
+      colnames(mean_exp)&lt;-colnames(esd_simulated)[2:length(colnames(esd_simulated))]
+      
+      #combine periods data
+      container2_holder &lt;- rbind(container2_holder, 
+                                 cbind(UK_afinn_2_OSD, mean_exp)%&gt;% mutate(Period=periods[y]))
+    }
+    
+    #combine the regional data
+    Regional_afinn_combined &lt;- rbind(Regional_afinn_combined, container2_holder)
+    
+    
+  }
+  
+  all_Regional_afinn_combined &lt;- rbind(all_Regional_afinn_combined, Regional_afinn_combined %&gt;%
+                                         mutate(Region = regions[i]))
+  
+  flush.console()
+  print(i)
+}
+
+#end time
+t2 &lt;- Sys.time()
+
+#run time
+t_diff &lt;- t2 -t1
+
+#Previewing the results
+#read.table
+
+#Export the &#39;Observation&#39; table (Opinion scores for time steps 1, 2, 3, called &#39;Periods&#39;)
+write.table(all_Regional_afinn_combined, file=&quot;all_obs_exp_Sentiment_ts_1_2_3_ALL.csv&quot;, sep=&quot;,&quot;, row.names = F)
+
+#P-values and position table for time step 1
+write.table(all_pvalueS_1, file=&quot;all_pvalue_Sentiment_ts_1.csv&quot;, sep=&quot;,&quot;, row.names = F)
+write.table(all_p_signs_1, file=&quot;all_sentiment_signs_ts_1.csv&quot;, sep=&quot;,&quot;, row.names = F)
+
+#P-values and position table for time step 2
+write.table(all_pvalueS_2, file=&quot;all_pvalue_Sentiment_ts_2.csv&quot;, sep=&quot;,&quot;, row.names = F)
+write.table(all_p_signs_2, file=&quot;all_sentiment_signs_ts_2.csv&quot;, sep=&quot;,&quot;, row.names = F)
+
+#P-values and position table for time step 3
+write.table(all_pvalueS_3, file=&quot;all_pvalue_Sentiment_ts_3.csv&quot;, sep=&quot;,&quot;, row.names = F)
+write.table(all_p_signs_3, file=&quot;all_sentiment_signs_ts_3.csv&quot;, sep=&quot;,&quot;, row.names = F)</code></pre>
+</div>
+<div id="plotting" class="section level1">
+<h1>Plotting</h1>
+<p>In this section, we provide codes for visualizing the results based on the tables generated above.</p>
+<div id="radar-chart" class="section level2">
+<h2>Radar chart</h2>
+<p>To plot the measured opinion across the police force areas (PFAs)</p>
+<pre class="r"><code>#define names and order of regions
+regions &lt;- c(&quot;North West&quot;, &quot;North East&quot;,&quot;Yorkshire and the Humber&quot;,
+             &quot;West Midlands&quot;,&quot;East Midlands&quot;,&quot;Eastern&quot;,
+             &quot;Wales&quot;, &quot;South West&quot;,&quot;South East&quot;)
+
+
+#read in observation table
+all_UK_bing_combined &lt;- read.table(file=&quot;all_obs_exp_Sentiment_ts_1_2_3_ALL_6.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+
+#read in &#39;Position&#39; tables
+all_pvalueS_1 &lt;- read.table(file=&quot;all_pvalue_Sentiment_ts_1.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+all_pvalueS_2 &lt;- read.table(file=&quot;all_pvalue_Sentiment_ts_2.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+all_pvalueS_3 &lt;- read.table(file=&quot;all_pvalue_Sentiment_ts_3.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+
+#read in P-values
+all_p_signs_1 &lt;- read.table(file=&quot;all_sentiment_signs_ts_1.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+all_p_signs_2 &lt;- read.table(file=&quot;all_sentiment_signs_ts_2.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+all_p_signs_3 &lt;- read.table(file=&quot;all_sentiment_signs_ts_3.csv&quot;, sep=&quot;,&quot;, head=TRUE)
+
+
+for(k in 1:length(regions)){ 
+  
+  
+  UK_bing_combined_subset &lt;- all_UK_bing_combined[which(all_UK_bing_combined$Region %in% regions[k]),] %&gt;%
+    select(-c(Region))
+  
+  UK_bing_combined_subset &lt;- UK_bing_combined_subset %&gt;%
+    dplyr::select(c(Country, Period, net_sentiment_OSD))
+  
+  UK_bing_combined_subset &lt;- t(dcast(UK_bing_combined_subset, Period ~ Country))
+  
+  UK_bing_combined_subset &lt;- UK_bing_combined_subset[2:nrow(UK_bing_combined_subset), ]
+  
+  UK_bing_combined_subset &lt;- data.frame(cbind(rownames(UK_bing_combined_subset), UK_bing_combined_subset))
+  
+  colnames(UK_bing_combined_subset) &lt;- c(&quot;Group&quot;, &quot;Period1&quot;,&quot;Period2&quot;,&quot;Period3&quot;)
+  
+  UK_bing_combined_subset$Period1 &lt;- as.numeric(UK_bing_combined_subset$Period1)
+  UK_bing_combined_subset$Period2 &lt;- as.numeric(UK_bing_combined_subset$Period2)
+  UK_bing_combined_subset$Period3 &lt;- as.numeric(UK_bing_combined_subset$Period3)
+  
+  
+  df.UK_bing_combined_subset_2 &lt;- melt(UK_bing_combined_subset, 
+                                       id.vars = c(&quot;Group&quot;), 
+                                       measure.vars = colnames(UK_bing_combined_subset)[2:length(colnames(UK_bing_combined_subset))],
+                                       variable.name = &quot;Key&quot;,
+                                       value.name = &quot;Score&quot;)
+  
+  col = c(viridis(10)[9], viridis(10)[6], viridis(10)[3])
+  linetp &lt;- c(rep(1, nrow(df.UK_bing_combined_subset_2)/3),
+              rep(2, nrow(df.UK_bing_combined_subset_2)/3), 
+              rep(3, nrow(df.UK_bing_combined_subset_2)/3))
+  
+  if(regions[k]==&quot;North West&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    North_West = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  North_West
+  
+  if(regions[k]==&quot;North East&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    North_East = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;Yorkshire and the Humber&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    Yorkshire_and_the_Humber = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;West Midlands&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    West_Midlands = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar() 
+  }
+  
+  max(df.UK_bing_combined_subset_2$Score)  
+  
+  if(regions[k]==&quot;East Midlands&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    East_Midlands = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;Eastern&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    Eastern = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;Wales&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    Wales = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;South West&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    South_West = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  if(regions[k]==&quot;South East&quot;){
+    df.UK_bing_combined_subset_2 &lt;- df.UK_bing_combined_subset_2 %&gt;%
+      #group_by(Key)%&gt;%
+      arrange(desc(Key), Group)%&gt;%
+      as.data.frame()
+    
+    South_East = df.UK_bing_combined_subset_2 %&gt;%
+      ggplot(aes(x = Group,y = Score,color = Key,group = Key,fill = Key)) +
+      geom_polygon(size = 1, alpha = .1, fill=NA,linetype=linetp) +
+      scale_color_manual(values=col)+
+      geom_point(size = 3) +
+      ylim(min(df.UK_bing_combined_subset_2$Score)-5, max(df.UK_bing_combined_subset_2$Score)) + ggtitle(regions[k])  + 
+      scale_x_discrete() +
+      xlab(&quot;&quot;)+
+      theme_light() +
+      #scale_color_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      #scale_fill_manual(values = c(&quot;Red&quot;, &quot;Blue&quot;)) +
+      coord_radar() #+
+    #theme_radar()
+  }
+  
+  #mapping, plot maps for the web-app
+  #https://gis.stackexchange.com/questions/203581/r-ggplot2-adding-an-additional-line-polygon-to-a-choropleth-map 
+  #Sys.sleep(2)
+  #two-tailed 
+  #https://www.investopedia.com/terms/t/two-tailed-test.asp
+  
+  #dev.off()
+  
+}
+
+
+dev.new()
+
+ggarrange(
+  North_West, North_East, Yorkshire_and_the_Humber, West_Midlands,
+  common.legend = TRUE, nrow=2, ncol=2, legend = &quot;bottom&quot;
+)
+
+
+ggarrange(
+  East_Midlands,            
+  Eastern, Wales, South_West, 
+  common.legend = TRUE, nrow=2, ncol=2, legend = &quot;bottom&quot;
+)
+
+
+ggarrange(
+  South_East,
+  common.legend = TRUE, nrow=2, ncol=2, legend = &quot;bottom&quot;
+)</code></pre>
+<ol start="2" style="list-style-type: lower-roman">
+<li><em>Likert Chart</em> - To show the proportion of tweet types and sentiments per PFA</li>
+<li><em>Spatial Maps</em> - To show the spatial distribution of significant testing results</li>
+</ol>
+<p>First</p>
+</div>
 </div>
 
 
