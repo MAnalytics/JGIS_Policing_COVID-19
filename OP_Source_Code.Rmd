@@ -1,23 +1,144 @@
+
+
 ---
-title: "An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – "
-subtitle: "Assessing COVID-19 Pandemic in Space-Time using Twitter Data"
-author: "Monsuru Adepeju"
-date: '`r format(Sys.time(), "%d %B, %Y (%H:%M)")`'
+title: "An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing"
+subtitle: "Assessing the Impacts of COVID-19 Pandemic in using Twitter Data"
+
+author: |
+  | `Authors:`
+  | `Adepeju, M* and Jimoh, F**`
+  | `*Big Data Centre, Manchester Metropolitan University, Manchester, M15 6BH`
+  | `**School of Science, Engineering and Environment, University of Salford, United Kingdom`
+  | `Contact: m.adepeju@mmu.ac.uk`
+
+date: |
+  | `Date:`
+  | ``r Sys.Date()``
 output:
-  html_document: 
-    toc: yes
-    pandoc_args: [
-      "+RTS", "-K64m",
-      "-RTS"
-    ]
-  pdf_document:
-    fig_crop: no
-    highlight: kate
-    # keep_tex: yes
-    # latex_engine: xelatex
-    number_sections: yes
-fontsize: 10pt
+  rmarkdown::html_vignette
+
+#dev: png
+#output:
+  #word_document: default
+  #always_allow_html: yes
+#  pdf_document: default
+always_allow_html: yes
+#fig_caption: yes
+
 ---
+
+<style type="text/css">
+
+h1.title {
+  font-size: 26px;
+  line-height: 130%;
+  color: Black;
+  text-align: center;
+}
+
+<!-- h2.subtitle { -->
+<!--   font-size: 26px; -->
+<!--   line-height: 130%; -->
+<!--   color: Red; -->
+<!--   text-align: center; -->
+<!-- } -->
+
+h2.subtitle {
+  text-align: center;
+}
+
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  font-size: 17px;
+  font-family: "Arial";
+  color: Black;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 17px;
+  font-family: "Arial", Times, serif;
+  color: Black;
+  text-align: center;
+}
+
+h4.abstract { /* Header 4 - and the author and data headers use this too  */
+  font-size: 10px;
+  font-family: "Arial", Times, serif;
+  color: black;
+  text-align: center;
+}
+
+h4.institute{ /* Header 4 - and the author and data headers use this too  */
+  font-size: 10px;
+  font-family: "Arial", Times, serif;
+  color: black;
+  text-align: center;
+}
+
+body, td {
+   font-size: 14px;
+}
+code.r{
+  font-size: 13px;
+}
+pre {
+  font-size: 13px
+}
+h1 { /* Header 1 */
+  font-size: 16px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 16px;
+  color: DarkBlue;
+
+}
+h3 { /* Header 3 */
+  font-size: 15px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+
+</style>
+
+<!-- --- -->
+<!-- title: "An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – " -->
+<!-- subtitle: "Assessing COVID-19 Pandemic in Space-Time using Twitter Data" -->
+<!-- author: "Monsuru Adepeju" -->
+<!-- date: '`r format(Sys.time(), "%d %B, %Y (%H:%M)")`' -->
+<!-- output: -->
+<!--   html_document:  -->
+<!--     toc: yes -->
+<!--     pandoc_args: [ -->
+<!--       "+RTS", "-K64m", -->
+<!--       "-RTS" -->
+<!--     ] -->
+<!--   pdf_document: -->
+<!--     fig_crop: no -->
+<!--     highlight: kate -->
+<!--     # keep_tex: yes -->
+<!--     # latex_engine: xelatex -->
+<!--     number_sections: yes -->
+<!-- fontsize: 10pt -->
+<!-- --- -->
+
+```{r functions, include=FALSE}
+# A function for captioning and referencing images
+fig <- local({
+    i <- 0
+    ref <- list()
+    list(
+        cap=function(refName, text) {
+            i <<- i + 1
+            ref[[refName]] <<- i
+            paste("Figure ", i, ": ", text, sep="")
+        },
+        ref=function(refName) {
+            ref[[refName]]
+        })
+})
+```
+
+
+# Preface
 
 _This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', submitted to JGIS_
 
@@ -35,8 +156,10 @@ Configure the script here. As well as making sure all the libraries used below h
 
 ```{r initialise, message=FALSE}
 
-# This directory needs to be set to the location of this script
+# This directory needs to be set to the location of this script on your PC
 WORKING_DIR <- 'C:/R/Github/JGIS_Policing_COVID-19'
+
+#setting working directory
 setwd(WORKING_DIR)
 
 library(twitteR) #for setting up Twitter authorization
@@ -62,8 +185,12 @@ library(ggradar)
 library(RColorBrewer)
 library(ggpubr)
 library(see)
-library(viridis)
 library(likert)
+library(rgdal) 
+library(rgeos)
+library(maptools)
+library(ggplot2)
+library(scales) 
 
 ```
  
@@ -113,8 +240,10 @@ for(i in seq_len(length(keywords))){ #i<-1
 }
 
 #save the results
-write_as_csv(all_Tweets, paste("only_policeTweet_set_", 1, "_.csv", sep=""), na="NA", fileEncoding = "UTF-8")
+write_as_csv(all_Tweets, paste("/data/only_policeTweet_set_", 1, "_.csv", sep=""), na="NA", fileEncoding = "UTF-8")
 #change the value "1" for subsequent downloading.
+
+#After downloading, add files inside the `data` directories.
 
 ```
 
@@ -123,11 +252,13 @@ write_as_csv(all_Tweets, paste("only_policeTweet_set_", 1, "_.csv", sep=""), na=
 The downloaded tweet files are read into RStudio and appended. Next, we geocode each tweets to its respective police force areas (PFA) using the [`PFA-Location lookup`](./data/PoliceForce_location.csv) table. Import other necessary files.
 
 ```{r, eval = FALSE}
-#read in downloaded tweets
-data_sample1 <- read.table(file="only_policeTweet_set_1.csv", sep=",", head=TRUE)
+#read in downloaded tweets#
+#Note: we do not add these datasets due to restriction place by the `Twitter's Developer Agreement and Policy`. The Policy can be found here: "https://developer.twitter.com/en/developer-terms/agreement-and-policy".
+
+data_sample1 <- read.table(file="/data/only_policeTweet_set_1.csv", sep=",", head=TRUE)
 .
 .
-data_sampleN <- read.table(file="only_policeTweet_set_N.csv", sep=",", head=TRUE)
+data_sampleN <- read.table(file="/data/only_policeTweet_set_N.csv", sep=",", head=TRUE)
 
 #combine data
 data <- rbind(data_sample1, ....., data_sampleN)
@@ -145,7 +276,7 @@ rm(list=ls()[! ls() %in%
   c("data_")])
 
 #read in the PFA-location lookup table
-location <- read.csv(file="PoliceForce_location.csv", sep=",", head=TRUE)
+location <- read.csv(file="/data/PoliceForce_location.csv", sep=",", head=TRUE)
 
 #preview
 head(location)
@@ -175,7 +306,7 @@ rm(list=ls()[! ls() %in%
                c("data_1")])
 
 #get names of policing regions
-Pf_names_regions <- read.table(file="Regions.csv", sep=",", head=TRUE)
+Pf_names_regions <- read.table(file="/data/Regions.csv", sep=",", head=TRUE)
 
 #collate names of PFAs
 Pf_names_regions_uni <- Pf_names_regions$Police.Force
@@ -347,11 +478,10 @@ for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
   flush.console()
   print(paste(i, z, " | "))
   
-  #write the OSD for the current PFA
-  write.table(tweet_container_afinn, file = paste("C:/Users/55131065/Desktop/downloadTweets/outputs/", 
+  #write the OSD for the current PFA into the `output` directory
+  write.table(tweet_container_afinn, file = paste("/outputs/", 
                                                   "police_cleaned_", Pf_names_regions_uni[i], "_all_DATA_afinn_observed_ts", 
-                                                  ".csv", sep=""),
-              sep=",", row.names = F)
+                                                  ".csv", sep=""), sep=",", row.names = F)
   
 }
 
@@ -417,7 +547,7 @@ for(i in 1:length(regions)){ #i=1
     init <- init + 1
     
     #read in the OSD
-    UK_afinn_read <- read.table(file = paste("C:/Users/55131065/Desktop/downloadTweets/outputs/", 
+    UK_afinn_read <- read.table(file = paste("/outputs/", 
                                              "police_cleaned_", subsetP$Police.Force[j],"_all_DATA_afinn_observed_ts", 
                                              ".csv", sep=""), sep=",", head=TRUE)
     
@@ -556,21 +686,19 @@ t_diff <- t2 -t1
 #read.table
 
 #Export the 'Observation' table (Opinion scores for time steps 1, 2, 3, called 'Periods')
-write.table(all_Regional_afinn_combined, file="all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=",", row.names = F)
+write.table(all_Regional_afinn_combined, file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=",", row.names = F)
 
 #P-values and position table for time step 1
-write.table(all_pvalueS_1, file="all_pvalue_Sentiment_ts_1.csv", sep=",", row.names = F)
-write.table(all_p_signs_1, file="all_sentiment_signs_ts_1.csv", sep=",", row.names = F)
+write.table(all_pvalueS_1, file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", row.names = F)
+write.table(all_p_signs_1, file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", row.names = F)
 
 #P-values and position table for time step 2
-write.table(all_pvalueS_2, file="all_pvalue_Sentiment_ts_2.csv", sep=",", row.names = F)
-write.table(all_p_signs_2, file="all_sentiment_signs_ts_2.csv", sep=",", row.names = F)
+write.table(all_pvalueS_2, file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", row.names = F)
+write.table(all_p_signs_2, file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", row.names = F)
 
 #P-values and position table for time step 3
-write.table(all_pvalueS_3, file="all_pvalue_Sentiment_ts_3.csv", sep=",", row.names = F)
-write.table(all_p_signs_3, file="all_sentiment_signs_ts_3.csv", sep=",", row.names = F)
-
-
+write.table(all_pvalueS_3, file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", row.names = F)
+write.table(all_p_signs_3, file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", row.names = F)
 
 ```
 
@@ -592,17 +720,17 @@ regions <- c("North West", "North East","Yorkshire and the Humber",
 
 
 #read in observation table
-all_UK_bing_combined <- read.table(file="all_obs_exp_Sentiment_ts_1_2_3_ALL_6.csv", sep=",", head=TRUE)
+all_UK_bing_combined <- read.table(file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL_6.csv", sep=",", head=TRUE)
 
 #read in 'Position' tables
-all_pvalueS_1 <- read.table(file="all_pvalue_Sentiment_ts_1.csv", sep=",", head=TRUE)
-all_pvalueS_2 <- read.table(file="all_pvalue_Sentiment_ts_2.csv", sep=",", head=TRUE)
-all_pvalueS_3 <- read.table(file="all_pvalue_Sentiment_ts_3.csv", sep=",", head=TRUE)
+all_pvalueS_1 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", head=TRUE)
+all_pvalueS_2 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", head=TRUE)
+all_pvalueS_3 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", head=TRUE)
 
 #read in P-values
-all_p_signs_1 <- read.table(file="all_sentiment_signs_ts_1.csv", sep=",", head=TRUE)
-all_p_signs_2 <- read.table(file="all_sentiment_signs_ts_2.csv", sep=",", head=TRUE)
-all_p_signs_3 <- read.table(file="all_sentiment_signs_ts_3.csv", sep=",", head=TRUE)
+all_p_signs_1 <- read.table(file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", head=TRUE)
+all_p_signs_2 <- read.table(file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", head=TRUE)
+all_p_signs_3 <- read.table(file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", head=TRUE)
 
 
 for(k in 1:length(regions)){ 
@@ -830,50 +958,522 @@ for(k in 1:length(regions)){
       coord_radar() #+
     #theme_radar()
   }
-  
-  #mapping, plot maps for the web-app
-  #https://gis.stackexchange.com/questions/203581/r-ggplot2-adding-an-additional-line-polygon-to-a-choropleth-map 
-  #Sys.sleep(2)
-  #two-tailed 
-  #https://www.investopedia.com/terms/t/two-tailed-test.asp
-  
-  #dev.off()
-  
+
 }
 
+```
 
-dev.new()
-
+```{r, eval=FALSE}
+#visualization
 ggarrange(
   North_West, North_East, Yorkshire_and_the_Humber, West_Midlands,
   common.legend = TRUE, nrow=2, ncol=2, legend = "bottom"
 )
+```
 
-#Add figure
+```{r figs1, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Measured Opinions for regions 1 to 4"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/sent_1_4.png")
+```
 
+```{r, eval=FALSE}
 ggarrange(
   East_Midlands,            
   Eastern, Wales, South_West, 
   common.legend = TRUE, nrow=2, ncol=2, legend = "bottom"
 )
+```
 
-#Add figure
+```{r figs2, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Measured Opinions for regions 5 to 8"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/sent_5_8.png")
+```
 
+```{r, eval=FALSE}
 ggarrange(
   South_East,
   common.legend = TRUE, nrow=2, ncol=2, legend = "bottom"
 )
+```
 
-Add figure
-
-
+```{r figs3, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Measured Opinions for region 9"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/sent_9_9.png")
 ```
 
 
-(ii) _Likert Chart_ - To show the proportion of tweet types and sentiments per PFA
-(iii) _Spatial Maps_ - To show the spatial distribution of significant testing results
+### Likert Chart
 
-First
+To show the proportion of tweet types and sentiments per PFA
+
+```{r, eval=FALSE}
+
+Pf_names_regions <- read.table(file="Regions.csv", sep=",", head=TRUE)
+
+# regions <- c("North West", "North East","Yorkshire and the Humber",
+#              "West Midlands","East Midlands","Eastern",
+#              "Wales", "South West","South East")
 
 
+periods <- c("Period1", "Period2", "Period3")
+#init <- 0
+
+#generate the expected and observed for all regions
+for(y in 1:length(periods)){  #y<-1
+  
+  likert_sentimentData <- NULL
+  
+  for(i in 1:length(unique(Pf_names_regions$Regions))){ #i=7
+    
+    subsetP <- Pf_names_regions %>% 
+      filter(Regions == unique(Pf_names_regions$Regions)[i])
+    
+    #Region <- regions[i]
+    
+    for(j in 1:nrow(subsetP)) {#j=3
+      #for(j in 1:3) {#j=1
+      
+      #init <- init + 1
+      
+      UK_afinn_read <- read.table(file = paste("/outputs/", "police_cleaned_", 
+                                               subsetP$Police.Force[j],"_all_DATA_afinn_observed_ts", ".csv", sep=""), 
+                                                  sep=",", head=TRUE)
+      
+
+      head(UK_afinn_read)
+      UK_afinn_read[1:10,]
+      
+      unique(UK_afinn_read$Period)
+      
+      #compute a unique sentiment for each tweet
+      UK_afinn_read <- UK_afinn_read %>% 
+        dplyr::group_by(Period, country, pandem_keyword, ID)%>%
+        dplyr::summarise(sentiment_score = sum(value))%>%
+        dplyr::filter(sentiment_score != 0) %>% #ignoring the neutral
+        dplyr::mutate(sentiment = if_else(sentiment_score > 0, "positive", "negative"))%>%
+        dplyr::select(-c(sentiment_score))%>%
+        ungroup %>%
+        dplyr::mutate(word = "word")%>%
+        dplyr::select(ID, word, sentiment, pandem_keyword,country,Period)
+      
+      
+      head(UK_afinn_read)
+      
+      #compute the probability of observed from the 'absent' group
+      #generate the sentiment list based on the prob.
+      #assign the 'exist' group with new sentiments based on the prob
+      #then plot the expected and observed.
+      
+      merge_all <- NULL
+    
+      
+      #subset period 
+      UK_afinn_read_subset <- UK_afinn_read %>%
+        dplyr::filter(Period == periods[y])
+      
+      length(which(UK_afinn_read_subset$pandem_keyword=="absent"))
+      
+      #generate expected osbservation  
+      
+      #compute the observed from the original data
+      UK_afinn_OSD <- UK_afinn_read_subset %>% 
+        dplyr::select(ID, word, sentiment, pandem_keyword, country)#%>%
+        #dplyr::select(-c())
+      
+      head(UK_afinn_OSD)
+      
+      #need to generate a new document with 100 x 42 for likert to work
+      prob_list <- UK_afinn_OSD %>%
+        dplyr::mutate(total=n())%>%
+        dplyr::group_by(pandem_keyword)%>%
+        dplyr::mutate(len=n())%>%
+        ungroup()%>%
+        dplyr::group_by(pandem_keyword, sentiment) %>%
+        dplyr::mutate(count=n())%>%
+        dplyr::mutate(prob_ = count/len) %>% #prob of policing sentiments
+        dplyr::distinct(sentiment, pandem_keyword, .keep_all = TRUE)%>%
+        dplyr::mutate(share=round((count/total)*100, digits=0))%>%
+        dplyr::select(sentiment, pandem_keyword, share)
+      
+
+      #now generate the dataframe based on the probilities
+      Type_1_Positive_p <- prob_list %>%
+        dplyr::filter(sentiment == "positive" & pandem_keyword == "absent")
+      Type_1_Positive <- rep("Type_1_Positive", Type_1_Positive_p$share)
+      
+      Type_1_Negative_p <- prob_list %>%
+        dplyr::filter(sentiment == "negative" & pandem_keyword == "absent")
+      Type_1_Negative <- rep("Type_1_Negative", Type_1_Negative_p$share)
+      
+      Type_2_Positive_p <- prob_list %>%
+        dplyr::filter(sentiment == "positive" & pandem_keyword == "exist")
+      Type_2_Positive <- rep("Type_2_Positive", Type_2_Positive_p$share)
+      
+      Type_2_Negative_p <- prob_list %>%
+        dplyr::filter(sentiment == "negative" & pandem_keyword == "exist")
+      Type_2_Negative <- rep("Type_2_Negative", Type_2_Negative_p$share)
+      
+      #combine all
+      merge_all <- c(Type_1_Positive, Type_1_Negative, Type_2_Positive, Type_2_Negative)
+      
+      
+      likert_sentimentData <- cbind(likert_sentimentData, merge_all)
+      
+      flush.console()
+      print(y)
+
+    } 
+  }
+  
+  colnames(likert_sentimentData) <- Pf_names_regions$Police.Force
+  write.table(likert_sentimentData, file = paste("/outputs/Likert_Data", periods[y], ".csv", sep="_"), sep=",")
+  
+  flush.console()
+  print(y)
+}  
+#----------------------------------------------------------
+#plot
+
+PR <- c("Period1", "Period2", "Period3")
+
+for(m in 1:length(PR)){
+lik_p1 <- read.table(file = paste("/outputs/Likert_Data",PR[m], ".csv", sep="_"), sep=",", head=TRUE)
+
+lik_p1 <- data.frame(lik_p1) %>% mutate_if(is.character,as.factor)
+
+# Make list of ordered factor variables
+out <- lapply(lik_p1, function(x) ordered(x, levels = c("Type_1_Positive", "Type_1_Negative", "Type_2_Negative", "Type_2_Positive") ) )
+
+#  Combine into data.frame
+res <- do.call( data.frame , out )
+
+
+# Build plot
+p <- likert(res) 
+
+if(m == 1){
+  title = "Time Step 1"
+    PR1 <- plot(p, centered=FALSE) + ggtitle(title)
+  }
+
+if(m == 2){
+  title = "Time Step 2"
+  PR2 <- plot(p, centered=FALSE) + ggtitle(title)
+}
+
+if(m == 3){
+  title = "Time Step 3"
+  PR3 <- plot(p, centered=FALSE) + ggtitle(title)
+}
+
+
+}
+```
+
+```{r, eval=FALSE}
+ggarrange(
+  PR1,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs5, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Proportion of tweet types and sentiments per PFA at time step 1"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/likert_T1.png")
+```
+
+```{r, eval=FALSE}
+ggarrange(
+  PR2,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs6, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Proportion of tweet types and sentiments per PFA at time step 2"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/likert_T2.png")
+```
+
+```{r, eval=FALSE}
+ggarrange(
+  PR3,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs7, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Proportion of tweet types and sentiments per PFA at time step 3"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/likert_T3.png")
+```
+
+# Spatial Maps 
+
+To show the spatial distribution of significant testing results
+
+### Preparing the data 
+
+This section prepares the data in the format necessary for spatial plots 
+
+```{r, eval=FALSE}
+
+#read in p-values files for each time step
+sent_pvalues_1 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", head=TRUE)
+sent_pvalues_2 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", head=TRUE)
+sent_pvalues_3 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", head=TRUE)
+
+#merge data
+sent_pvalues_1_2_3 <- data.frame(cbind(sent_pvalues_1$pvalue_sentiment, 
+                                       sent_pvalues_2$pvalue_sentiment, 
+                                       sent_pvalues_3))
+
+sent_pvalues_1_2_3 <- sent_pvalues_1_2_3 %>%
+  dplyr::rename(Period1=sent_pvalues_1.pvalue_sentiment, 
+                Period2=sent_pvalues_2.pvalue_sentiment, 
+                Period3=pvalue_sentiment,
+                PFA=X, Region = X.1)%>%
+  dplyr::relocate(Region, .before=Period1) %>%
+  dplyr::relocate(PFA, .before=Period1)%>%
+  dplyr::select(-c(Region))
+
+
+sent_pvalues_1_2_3 <- sent_pvalues_1_2_3 %>%
+  dplyr::rename(p.Period1=Period1, p.Period2=Period2, p.Period3=Period3)
+
+#read `Position` files
+sign_sentm_1 <- read.table(file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", head=TRUE)
+sign_sentm_2 <- read.table(file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", head=TRUE)
+sign_sentm_3 <- read.table(file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", head=TRUE)
+
+sign_sentm_1_2_3 <- data.frame(cbind(sign_sentm_1$V1, sign_sentm_2$V1, sign_sentm_3))
+
+sign_sentm_1_2_3 <- sign_sentm_1_2_3 %>%
+  dplyr::rename(Period1=sign_sentm_1.V1, 
+                Period2=sign_sentm_2.V1, 
+                Period3=V1,
+                PFA=V2, Region = V3)%>%
+  dplyr::relocate(Region, .before=Period1) %>%
+  dplyr::relocate(PFA, .before=Period1)%>%
+  dplyr::select(-c(Region))
+
+sign_sentm_1_2_3 <- sign_sentm_1_2_3 %>%
+  dplyr::rename(s.Period1=Period1, s.Period2=Period2, s.Period3=Period3)
+#read in the Observations (measure opinions)
+sent_scores_1_2_3 <- read.table(file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=",", head=TRUE)
+
+sent_scores_1_2_3 <- sent_scores_1_2_3 %>%
+  dplyr::select(Country, Period, net_sentiment_OSD)
+
+sent_scores_1_2_3 <- t(dcast(sent_scores_1_2_3, Period ~ Country))
+
+sent_scores_1_2_3 <- sent_scores_1_2_3[2:nrow(sent_scores_1_2_3), ]
+
+sent_scores_1_2_3 <- data.frame(cbind(rownames(sent_scores_1_2_3), sent_scores_1_2_3))
+
+colnames(sent_scores_1_2_3) <- c("PFA", "Period1","Period2","Period3")
+
+sent_scores_1_2_3$Period1 <- as.numeric(sent_scores_1_2_3$Period1)
+sent_scores_1_2_3$Period2 <- as.numeric(sent_scores_1_2_3$Period2)
+sent_scores_1_2_3$Period3 <- as.numeric(sent_scores_1_2_3$Period3)
+
+sent_scores_1_2_3 <- sent_scores_1_2_3 %>%
+  dplyr::rename(r.Period1=Period1, r.Period2=Period2, r.Period3=Period3)
+
+PFA <- gsub(".", " ", sent_scores_1_2_3$PFA, fixed=TRUE)
+
+sent_scores_1_2_3$PFA <- PFA
+
+sent_pvalues_sign_1_2_3 <- sent_pvalues_1_2_3 %>%
+  dplyr::left_join(sign_sentm_1_2_3)
+
+PFA <- gsub("-", " ", sent_pvalues_sign_1_2_3$PFA, fixed=TRUE)
+sent_pvalues_sign_1_2_3$PFA <- PFA
+
+
+
+sent_pvalues_sign_scores_1_2_3 <- sent_pvalues_sign_1_2_3 %>%
+  dplyr::left_join(sent_scores_1_2_3)
+
+p_class <- NULL
+
+loop_col <- (ncol(sent_pvalues_sign_scores_1_2_3)-1)/3
+
+for(i in 1:loop_col){ #i<-3
+  #to assign -ve or +ve depending on the if obs > exp.
+  n_ <- data.frame(sent_pvalues_sign_scores_1_2_3[,c(1,(1+i))]) %>% 
+    dplyr::rename(p_values = 2)%>%
+    dplyr::mutate(p_ = case_when(
+      between(p_values, 0, 0.001) ~ "3",
+      between(p_values, 0.002, 0.0249) ~ "2",
+      between(p_values, 0.0250, 1) ~ "1",
+      TRUE ~ NA_character_
+    ))%>%
+    dplyr::select(c(PFA, p_)) %>%
+    dplyr::left_join(data.frame(sent_pvalues_sign_scores_1_2_3[,c(1,(loop_col+1+i))])) %>%
+    dplyr::mutate(p_2 = if_else(.[3]=="TRUE", paste(p_,"", sep=""), paste("-",p_,sep="")))%>%
+    dplyr::mutate(p_2 = as.numeric(p_2)) %>%
+    dplyr::mutate(p_3 = if_else((p_2 == -1 | p_2 == 1), 0, p_2)) 
+  
+  p_class <- cbind(p_class, n_[,5])
+}
+
+colnames(p_class) <- colnames(sent_pvalues_sign_scores_1_2_3)[2: (loop_col+1)] #just borrowing the 'colnames' here.
+scores <- sent_pvalues_sign_scores_1_2_3[,c(8:10)]
+colnames(scores) <- colnames(sent_pvalues_sign_scores_1_2_3)[5: 7] # also borrowing
+
+final_p_class_scores <- data.frame(cbind(PFA=sent_pvalues_sign_scores_1_2_3[,c(1)], p_class, scores))
+
+#preview file
+final_p_class_scores %>% head()
+
+```
+
+## Plotting
+
+```{r, eval=FALSE}
+
+#load shapfiles
+
+#PFA boundaries
+study_area <- readOGR(dsn="data", layer="england_wales_pfas") 
+
+#regional boundaries
+regional_boundary <- readOGR(dsn=".", layer="regional_boundary") 
+
+regional_boundary <- st_as_sf(regional_boundary)
+
+#plot each result
+for(j in 1:3){ #j<-1
+  
+  study_area_ <- st_as_sf(study_area)
+  study_area_ <- study_area_ %>%
+    dplyr::left_join(final_p_class_scores)
+  
+  #choose a point on the surface of each geometry
+  #nc3_points <- sf::st_point_on_surface(nc3)
+  study_area_points <- sf::st_point_on_surface(study_area_)
+  
+  # retrieve the coordinates
+  study_area_points_coords <- as.data.frame(sf::st_coordinates(study_area_points))
+  
+  study_area_$to_Fill <- as.data.frame(study_area_points[,(19+j)])[,1]
+  #study_area_$to_Fill2 <- as.data.frame(study_area_points[,(19+j)])[,1]
+  study_area_points_coords$to_Label <- round(as.data.frame(study_area_points[(22+j)])[,1], digits = 1)
+  
+  pvalue_list <- c("0.001 {Obs.<<Exp.}", "0.002-0.025 {Obs.<<Exp.}", 
+                   "0.026-1.000 {Non Signif.}", "0.002-0.025 {Obs.>>Exp.}", "0.001 {Obs.>>Exp.}")
+  p_model <- c(-3, -2, 0, 2, 3)
+  
+  uni_col <- unique(study_area_$to_Fill)[order(unique(study_area_$to_Fill))]
+  
+  id_ <- which(!p_model %in% uni_col)
+  #p_model <- p_model[-id]
+  
+  colors <- brewer.pal(n = 5, name = "RdBu")
+  
+  if(length(id_)!=0){
+    p_model <- p_model[-id_]
+    colors <- colors[-id_]
+    pvalue_list <- pvalue_list[-id_]
+  }
+
+  id <- which(uni_col==0)
+
+  ##study_area_$pvalue_list <- 
+  regional_ss <- st_centroid(regional_boundary)
+  #ggplot()+ 
+  
+  #dev.new()
+  if(j == 1){
+    Period1 = ggplot() +
+      geom_sf(data = study_area_, aes(fill = as.factor(to_Fill))) +
+      ###scale_fill_manual(values = colors) + #,
+      #guide = guide_legend(override.aes = list(shape = rep(20, length(pvalue_list)), color = colors, size = 8))) +
+      geom_text(data = study_area_points_coords, aes(X, Y, label = to_Label), colour = "white") +
+      labs(title = "Period1")+
+      labs(fill="P-Values") +
+      geom_sf(data = regional_boundary, alpha = 0, cex=1.2, color="black") +
+      geom_text(data=regional_ss,aes(x=long,y=lat,label=Regions), 
+                nudge_x = 0, nudge_y = 0, 
+                check_overlap = F, size=3)+
+      scale_fill_manual(values=colors, 
+                        labels = pvalue_list)+
+      # scale_color_discrete(name="P-Values",
+      #                      labels=pvalue_list)+
+      #scale_color_hue(labels = pvalue_list)+
+      theme_light() #+ 
+    #theme_bw() 
+  }
+  
+  if(j == 2){
+    Period2 = ggplot() +
+      geom_sf(data = study_area_, aes(fill = as.factor(to_Fill))) +
+      ##scale_fill_manual(values = colors) + #,
+      #guide = guide_legend(override.aes = list(shape = rep(20, length(pvalue_list)), color = colors, size = 8))) +
+      geom_text(data = study_area_points_coords, aes(X, Y, label = to_Label), colour = "white") +
+      labs(title = "Period2")+
+      labs(fill="P-Values") +
+      geom_sf(data = regional_boundary, alpha = 0, cex=1.2, color="black") +
+      geom_text(data=regional_ss,aes(x=long,y=lat,label=Regions), 
+                nudge_x = 0, nudge_y = 0, 
+                check_overlap = F, size=3)+
+      scale_fill_manual(values=colors, 
+                        labels = pvalue_list)+
+      #scale_color_hue(labels = pvalue_list)+
+      theme_light() #+ 
+    #theme_bw() 
+  }
+  
+  if(j == 3){
+    Period3 = ggplot() +
+      geom_sf(data = study_area_, aes(fill = as.factor(to_Fill))) +
+      ##scale_fill_manual(values = colors) + #,
+      #guide = guide_legend(override.aes = list(shape = rep(20, length(pvalue_list)), color = colors, size = 8))) +
+      geom_text(data = study_area_points_coords, aes(X, Y, label = to_Label), colour = "white") +
+      labs(title = "Period3")+
+      labs(fill="P-Values") +
+      geom_sf(data = regional_boundary, alpha = 0, cex=1.2, color="black") +
+      geom_text(data=regional_ss,aes(x=long,y=lat,label=Regions), 
+                nudge_x = 0, nudge_y = 0, 
+                check_overlap = T, size=3)+
+      scale_fill_manual(values=colors, 
+                        labels = pvalue_list)+
+      #scale_color_hue(labels = pvalue_list)+
+      theme_light() #+ 
+    #theme_bw() 
+  }
+  
+  
+  flush.console()
+  print(j)
+  
+  #sleep()
+}
+```
+
+```{r, eval=FALSE}
+ggarrange(
+  Period1,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs8, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Spatial representation of opinion significance at time step 1"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/map_1.png")
+```
+
+```{r, eval=FALSE}
+ggarrange(
+ Period2,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs9, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Spatial representation of opinion significance at time step 1"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/map_2.png")
+```
+
+```{r, eval=FALSE}
+ggarrange(
+  Period3,
+  common.legend = TRUE, nrow=1, ncol=1, legend = "bottom"
+)
+```
+
+```{r figs10, echo=FALSE, eval=TRUE, include=TRUE, fig.cap=fig$cap("figs1", "Spatial representation of opinion significance at time step 1"), out.width = '60%', fig.align="center"} 
+knitr::include_graphics("figures/map_3.png")
+```
 
