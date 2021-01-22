@@ -14,7 +14,8 @@ _JGIS_.
 
 The empirical work outlined here can be conducted, using the R source code: [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd)
 
-Due to the `Twitter's Developer Agreement and Policy`, we will not be able to share any datasets, but we are confident that the source codes should run smoothtly if a user download the Twitter datasets following our instructions and recommended [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd). 
+Due to the `Twitter's Developer Agreement and Policy`, we will not be able to share any datasets, but we are confident that the source codes should run smoothtly if a user download the Twitter datasets following our instructions and recommended [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd). All the user-defined functions used by [`OP_Source_Code.Rmd`](./OP_Source_Code.Rmd)` can be found [here](./funct/functions.R)
+
 
 For any queries, please contact us via the email: `m.adepeju@mmu.ac.uk`.
 
