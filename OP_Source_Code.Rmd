@@ -202,10 +202,10 @@ All new developers must apply for a developer account to access Twitter APIs (se
 ```{r, message=FALSE, eval=FALSE}
 
 #define keys and tokens (Note: real keys or tokens do not contain asterisk as below)
-consumer_key <- 'rJWorDnMoARYE7********' 
-consumer_secret <- 'dUJktwlOwdbaUNB15z2Yw4HI3p*************'
-access_token <- '1108852279434715136-4IpdsZ***************'
-access_secret <- 'eX78KEUNtaU6GZ0wFay5laf******************'
+consumer_key <- 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' 
+consumer_secret <- 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+access_token <- 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+access_secret <- 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
 
 token <- create_token(
