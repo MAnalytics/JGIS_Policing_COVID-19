@@ -140,7 +140,7 @@ fig <- local({
 
 # Preface
 
-_This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', published in the Journal of Geographical Information System. Certain parts of this source code, including the calculation of opinion scores and simulation of expectation distribution, were later built into an R package named `Opitools`, which is available on `CRAN`. The building of the package happened when the article was actively under review. In the spirit of reproducibility, we will present, in this document, the actual codes that was used to conduct the original research, rather than the functions from the `Opitools` package. However, we highlight, at different sections of this document, different functions from the `Opitools` package that can be used to generate the same outputs as the section in question_. 
+_This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', published in the Journal of Geographical Information System. Certain parts of this source code, including the calculation of opinion scores and simulation of expectation distribution, were later built into an R package named `Opitools`, which is available on `CRAN`. The building of the package happened when the article was actively under review. In the spirit of reproducibility, we will present, in this document, the actual codes that was used to conduct the original research, rather than the functions from the `Opitools` package. However, we highlight, at different sections of this document (tagged as `Opitools Package Reference: #`), different functions from the `Opitools` package that can be used to generate the same outputs as the section in question_. 
 
 # Introduction
 
@@ -408,6 +408,13 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=1, loop through policing regions
     placeTwt_no_keyword <- data.frame(placeTwt$text) %>%
       dplyr::filter(stringr::str_detect(text, 'pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected', negate=TRUE))
     
+    #Opitools Package Reference: #1
+    #-----------------------------------
+    #The list of pandemic keywords can be found in 'Opitools'
+    #by typing 'covid_keys' in the console after installing the package
+    #-----------------------------------
+    
+    
     #create the id field and drop text field
     placeTwt_keyword_exist$ID <- seq.int(nrow(placeTwt_keyword_exist)) 
     
@@ -479,6 +486,13 @@ for(i in 1:length(Pf_names_regions_uni)){ #i=1, loop through policing regions
       mutate(Period = periods[z])%>%
       dplyr::select(-c(text))
     
+    #Opitools Package Reference: #2
+    #-----------------------------------
+    #The above chunks included components of 
+    #`opi_score` and `opi_impact` function.
+    #-----------------------------------    
+    
+
     #join the two observed sentiment document (OSD) documents
     placeTwt_all_DATA_afinn_absent <- data.frame(rbind(placeTwt_all_DATA_afinn_absent,
                                                        token_neg_no_keyword))
@@ -686,6 +700,13 @@ for(i in 1:length(regions)){ #i=2
   
   all_Regional_afinn_combined <- rbind(all_Regional_afinn_combined, Regional_afinn_combined %>%
                                          mutate(Region = regions[i]))
+ 
+#Opitools Package Reference: #3
+#-----------------------------------
+#The above chunks included components of 
+#`opi_score`, `opi_sim` and `opi_impact` functions.
+#-----------------------------------    
+  
   
   flush.console()
   print(i)
@@ -980,6 +1001,12 @@ for(k in 1:length(regions)){
   }
 
 }
+
+#Opitools Package Reference: #4
+#-----------------------------------
+#The above chunks form a component of 
+#`opi_impact` functions.
+#-----------------------------------    
 
 ```
 
@@ -1342,6 +1369,12 @@ final_p_class_scores <- data.frame(cbind(PFA=sent_pvalues_sign_scores_1_2_3[,c(1
 
 #preview file
 final_p_class_scores %>% head()
+
+#Opitools Package Reference: #5
+#-----------------------------------
+#The above chunks (i.e. p-value calculation)
+#form a component of `opi_impact` functions 
+#-----------------------------------    
 
 ```
 
