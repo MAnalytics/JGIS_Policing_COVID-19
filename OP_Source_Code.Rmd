@@ -140,7 +140,7 @@ fig <- local({
 
 # Preface
 
-_This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', submitted to JGIS_
+_This is the accompanying source code for the paper 'An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data', published in the Journal of Geographical Information System. Certain parts of this source code, including the calculation of opinion scores and simulation of expectation distribution, such  were later built into an R package named `Opitools`, which is available on `CRAN`. The building of the package happened when the article was actively under review. In the spirit of reproducibility, we will present in this document the actual codes that was used to conduct the original research, rather than the functions from the `Opitools` package. However, we highlight, at different sections of this document, the functions from the R-package that may be used to generate the same output as the section in question_. 
 
 # Introduction
 
@@ -257,6 +257,8 @@ The downloaded tweet files are read into RStudio and appended. Next, we geocode 
 #Note: we do not add these datasets due to restriction place by the `Twitter's Developer Agreement and Policy`. The Policy can be found here: "https://developer.twitter.com/en/developer-terms/agreement-and-policy".
 
 data_sample1 <- read.table(file=paste(WORKING_DIR, "/data/only_policeTweet_set_1.csv", sep=""), sep=",", head=TRUE)
+#data_sample1 <- readRDS(file=paste(WORKING_DIR, "/data/tweets_containing_only_policing_28_69.rds", sep=""))
+
 .
 .
 data_sampleN <- read.table(file=paste(WORKING_DIR, "/data/only_policeTweet_set_N.csv", sep=""), sep=",", head=TRUE)
@@ -274,7 +276,7 @@ data_ <- data %>%
                                          if_else(created_at >= "2020-12-20" & created_at <= "2021-01-19", "Period3", "0"))))             
 #house cleaning
 rm(list=ls()[! ls() %in% 
-  c("data_")])
+  c("WORKING_DIR","data_")])
 
 #read in the PFA-location lookup table
 location <- read.csv(file=paste(WORKING_DIR, "/data/PoliceForce_location.csv", sep=""), sep=",", head=TRUE)
@@ -304,7 +306,7 @@ data_1 <- data1 %>%
 
 #house cleaning
 rm(list=ls()[! ls() %in% 
-               c("data_1")])
+               c("WORKING_DIR", "data_1")])
 
 #get names of policing regions
 Pf_names_regions <- read.table(file=paste(WORKING_DIR, "/data/Regions.csv", sep=""), sep=",", head=TRUE)
@@ -314,7 +316,7 @@ Pf_names_regions_uni <- Pf_names_regions$Police.Force
 
 #house cleaning
 rm(list=ls()[! ls() %in% 
-               c("data_1", "Pf_names_regions_uni", "fix.contractions", "removeSpecialChars")])
+               c("WORKING_DIR", "data_1", "Pf_names_regions", "Pf_names_regions_uni", "fix.contractions", "removeSpecialChars")])
 
 #get the time steps
 periods <- unique(data_1$period)[2:4]
@@ -328,14 +330,17 @@ periods <- unique(data_1$period)[2:4]
 
 #given a police force area
 #--------------------------------
-for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
+for(i in 1:length(Pf_names_regions_uni)){ #i=1, loop through policing regions
 
   tweet_container_afinn <- NULL
   
   #given a time step (period)
   for(z in 1:length(periods)){ #z = 1
     
-    #use sample of London tweets (25%)
+    #--------------------------
+    #1. Data cleaning, 
+    #2. Removing duplicated text records, using similarity detection
+    #3. Use only 25% of data in case of "Metropolitan Police" which is too big!
     if(Pf_names_regions_uni[i]=="Metropolitan Police"){
       #clean tweets
       placeTwt <- data_1 %>% 
@@ -378,6 +383,7 @@ for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
     #remove emoticons
     placeTwt$text <- sapply(placeTwt,function(row) iconv(row, "latin1", "ASCII", sub=""))
     
+    #changing expanding meaningful abbreviations
     placeTwt$text <- sapply(placeTwt , fix.contractions)
     
     #remove special characters
@@ -386,7 +392,14 @@ for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
     #convert all text to lower case
     placeTwt$text <- sapply(placeTwt$text, tolower)
     
+    #more removals
     placeTwt$text <- sapply(placeTwt,function(row) iconv(row, "latin1", "ASCII", sub=""))
+    #--------------------------
+    #convert to data.frame
+    placeTwt  <- as.data.frame(placeTwt)
+    
+    #import keywords that defines subject B (i.e. secondary subject)
+    #------------------------------------------
     
     #detect tweets with pandemic keywords
     placeTwt_keyword_exist <- data.frame(placeTwt$text) %>%
@@ -533,7 +546,7 @@ init <- 0
 #generate the expected and observed for all regions
 
 #loop throug region
-for(i in 1:length(regions)){ #i=1
+for(i in 1:length(regions)){ #i=2
 
   subsetP <- Pf_names_regions %>% 
     filter(Regions == regions[i])
@@ -579,6 +592,7 @@ for(i in 1:length(regions)){ #i=1
     
     container2_holder <- NULL
     
+    
     for(y in 1:length(periods)){  #y<-1
       
       UK_afinn_read_subset <- UK_afinn_read %>%
@@ -586,7 +600,7 @@ for(i in 1:length(regions)){ #i=1
       
       #--------------------------------------
       #randomization testing (replicas can be reduced to e.g. 99 for runtime)
-      esd_simulated <- net_sentiment_simulation(data = UK_afinn_read_subset, replicas=999)
+      esd_simulated <- net_sentiment_simulation(data = UK_afinn_read_subset, replicas=99)
       
       
       #compute the observed from the original data
