@@ -256,10 +256,10 @@ The downloaded tweet files are read into RStudio and appended. Next, we geocode 
 #read in downloaded tweets#
 #Note: we do not add these datasets due to restriction place by the `Twitter's Developer Agreement and Policy`. The Policy can be found here: "https://developer.twitter.com/en/developer-terms/agreement-and-policy".
 
-data_sample1 <- read.table(file="/data/only_policeTweet_set_1.csv", sep=",", head=TRUE)
+data_sample1 <- read.table(file=paste(WORKING_DIR, "/data/only_policeTweet_set_1.csv", sep=""), sep=",", head=TRUE)
 .
 .
-data_sampleN <- read.table(file="/data/only_policeTweet_set_N.csv", sep=",", head=TRUE)
+data_sampleN <- read.table(file=paste(WORKING_DIR, "/data/only_policeTweet_set_N.csv", sep=""), sep=",", head=TRUE)
 
 #combine data
 data <- rbind(data_sample1, ....., data_sampleN)
@@ -307,7 +307,7 @@ rm(list=ls()[! ls() %in%
                c("data_1")])
 
 #get names of policing regions
-Pf_names_regions <- read.table(file="/data/Regions.csv", sep=",", head=TRUE)
+Pf_names_regions <- read.table(file=paste(WORKING_DIR, "/data/Regions.csv", sep=""), sep=",", head=TRUE)
 
 #collate names of PFAs
 Pf_names_regions_uni <- Pf_names_regions$Police.Force
@@ -480,7 +480,7 @@ for(i in 1:length(Pf_names_regions_uni)){ #loop through policing regions
   print(paste(i, z, " | "))
   
   #write the OSD for the current PFA into the `output` directory
-  write.table(tweet_container_afinn, file = paste("/outputs/", 
+  write.table(tweet_container_afinn, file = paste(WORKING_DIR, "/outputs/", 
                                                   "police_cleaned_", Pf_names_regions_uni[i], "_all_DATA_afinn_observed_ts", 
                                                   ".csv", sep=""), sep=",", row.names = F)
   
@@ -548,7 +548,7 @@ for(i in 1:length(regions)){ #i=1
     init <- init + 1
     
     #read in the OSD
-    UK_afinn_read <- read.table(file = paste("/outputs/", 
+    UK_afinn_read <- read.table(file = paste(WORKING_DIR, "/outputs/", 
                                              "police_cleaned_", subsetP$Police.Force[j],"_all_DATA_afinn_observed_ts", 
                                              ".csv", sep=""), sep=",", head=TRUE)
     
@@ -687,19 +687,23 @@ t_diff <- t2 -t1
 #read.table
 
 #Export the 'Observation' table (Opinion scores for time steps 1, 2, 3, called 'Periods')
-write.table(all_Regional_afinn_combined, file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=",", row.names = F)
-
+write.table(all_Regional_afinn_combined, file=paste(WORKING_DIR, "/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=""), 
+            sep=",", row.names = F)
 #P-values and position table for time step 1
-write.table(all_pvalueS_1, file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", row.names = F)
-write.table(all_p_signs_1, file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", row.names = F)
-
+write.table(all_pvalueS_1, file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_1.csv", sep=""), 
+            sep=",", row.names = F)
+write.table(all_p_signs_1, file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_1.csv", sep=""), 
+            sep=",", row.names = F)
 #P-values and position table for time step 2
-write.table(all_pvalueS_2, file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", row.names = F)
-write.table(all_p_signs_2, file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", row.names = F)
-
+write.table(all_pvalueS_2, file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_2.csv", sep=""), 
+            sep=",", row.names = F)
+write.table(all_p_signs_2, file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_2.csv", sep=""), 
+            sep=",", row.names = F)
 #P-values and position table for time step 3
-write.table(all_pvalueS_3, file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", row.names = F)
-write.table(all_p_signs_3, file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", row.names = F)
+write.table(all_pvalueS_3, file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_3.csv", sep=""),
+            sep=",", row.names = F)
+write.table(all_p_signs_3, file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_3.csv", sep=""),
+            sep=",", row.names = F)
 
 ```
 
@@ -721,17 +725,18 @@ regions <- c("North West", "North East","Yorkshire and the Humber",
 
 
 #read in observation table
-all_UK_bing_combined <- read.table(file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL_6.csv", sep=",", head=TRUE)
+all_UK_bing_combined <- read.table(file=paste(WORKING_DIR, "/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL_6.csv", sep=""), 
+                                   sep=",", head=TRUE)
 
 #read in 'Position' tables
-all_pvalueS_1 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", head=TRUE)
-all_pvalueS_2 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", head=TRUE)
-all_pvalueS_3 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", head=TRUE)
+all_pvalueS_1 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_1.csv", sep=""), sep=",", head=TRUE)
+all_pvalueS_2 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_2.csv", sep=""), sep=",", head=TRUE)
+all_pvalueS_3 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_3.csv", sep=""), sep=",", head=TRUE)
 
 #read in P-values
-all_p_signs_1 <- read.table(file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", head=TRUE)
-all_p_signs_2 <- read.table(file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", head=TRUE)
-all_p_signs_3 <- read.table(file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", head=TRUE)
+all_p_signs_1 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_1.csv", sep=""), sep=",", head=TRUE)
+all_p_signs_2 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_2.csv", sep=""), sep=",", head=TRUE)
+all_p_signs_3 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_3.csv", sep=""), sep=",", head=TRUE)
 
 
 for(k in 1:length(regions)){ 
@@ -1006,7 +1011,8 @@ To show the proportion of tweet types and sentiments per PFA
 
 ```{r, eval=FALSE}
 
-Pf_names_regions <- read.table(file="Regions.csv", sep=",", head=TRUE)
+Pf_names_regions <- read.table(file=paste(WORKING_DIR, "/data/Regions.csv", sep=""), sep=",", head=TRUE)
+
 
 # regions <- c("North West", "North East","Yorkshire and the Humber",
 #              "West Midlands","East Midlands","Eastern",
@@ -1033,7 +1039,7 @@ for(y in 1:length(periods)){  #y<-1
       
       #init <- init + 1
       
-      UK_afinn_read <- read.table(file = paste("/outputs/", "police_cleaned_", 
+      UK_afinn_read <- read.table(file = paste(WORKING_DIR, "/outputs/", "police_cleaned_", 
                                                subsetP$Police.Force[j],"_all_DATA_afinn_observed_ts", ".csv", sep=""), 
                                                   sep=",", head=TRUE)
       
@@ -1124,7 +1130,7 @@ for(y in 1:length(periods)){  #y<-1
   }
   
   colnames(likert_sentimentData) <- Pf_names_regions$Police.Force
-  write.table(likert_sentimentData, file = paste("/outputs/Likert_Data", periods[y], ".csv", sep="_"), sep=",")
+  write.table(likert_sentimentData, file = paste(WORKING_DIR, "/outputs/Likert_Data", periods[y], ".csv", sep="_"), sep=",")
   
   flush.console()
   print(y)
@@ -1135,7 +1141,7 @@ for(y in 1:length(periods)){  #y<-1
 PR <- c("Period1", "Period2", "Period3")
 
 for(m in 1:length(PR)){
-lik_p1 <- read.table(file = paste("/outputs/Likert_Data",PR[m], ".csv", sep="_"), sep=",", head=TRUE)
+lik_p1 <- read.table(file = paste(WORKING_DIR, "/outputs/Likert_Data",PR[m], ".csv", sep="_"), sep=",", head=TRUE)
 
 lik_p1 <- data.frame(lik_p1) %>% mutate_if(is.character,as.factor)
 
@@ -1212,9 +1218,12 @@ This section prepares the data in the format necessary for spatial plots
 ```{r, eval=FALSE}
 
 #read in p-values files for each time step
-sent_pvalues_1 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_1.csv", sep=",", head=TRUE)
-sent_pvalues_2 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_2.csv", sep=",", head=TRUE)
-sent_pvalues_3 <- read.table(file="/outputs/all_pvalue_Sentiment_ts_3.csv", sep=",", head=TRUE)
+sent_pvalues_1 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_1.csv", sep=""),
+                             sep=",", head=TRUE)
+sent_pvalues_2 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_2.csv", sep=""), 
+                             sep=",", head=TRUE)
+sent_pvalues_3 <- read.table(file=paste(WORKING_DIR, "/outputs/all_pvalue_Sentiment_ts_3.csv", sep=""),
+                             sep=",", head=TRUE)
 
 #merge data
 sent_pvalues_1_2_3 <- data.frame(cbind(sent_pvalues_1$pvalue_sentiment, 
@@ -1235,9 +1244,9 @@ sent_pvalues_1_2_3 <- sent_pvalues_1_2_3 %>%
   dplyr::rename(p.Period1=Period1, p.Period2=Period2, p.Period3=Period3)
 
 #read `Position` files
-sign_sentm_1 <- read.table(file="/outputs/all_sentiment_signs_ts_1.csv", sep=",", head=TRUE)
-sign_sentm_2 <- read.table(file="/outputs/all_sentiment_signs_ts_2.csv", sep=",", head=TRUE)
-sign_sentm_3 <- read.table(file="/outputs/all_sentiment_signs_ts_3.csv", sep=",", head=TRUE)
+sign_sentm_1 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_1.csv", sep=""), sep=",", head=TRUE)
+sign_sentm_2 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_2.csv", sep=""), sep=",", head=TRUE)
+sign_sentm_3 <- read.table(file=paste(WORKING_DIR, "/outputs/all_sentiment_signs_ts_3.csv", sep=""), sep=",", head=TRUE)
 
 sign_sentm_1_2_3 <- data.frame(cbind(sign_sentm_1$V1, sign_sentm_2$V1, sign_sentm_3))
 
@@ -1253,7 +1262,7 @@ sign_sentm_1_2_3 <- sign_sentm_1_2_3 %>%
 sign_sentm_1_2_3 <- sign_sentm_1_2_3 %>%
   dplyr::rename(s.Period1=Period1, s.Period2=Period2, s.Period3=Period3)
 #read in the Observations (measure opinions)
-sent_scores_1_2_3 <- read.table(file="/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=",", head=TRUE)
+sent_scores_1_2_3 <- read.table(file=paste(WORKING_DIR, "/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv", sep=""), sep=",", head=TRUE)
 
 sent_scores_1_2_3 <- sent_scores_1_2_3 %>%
   dplyr::select(Country, Period, net_sentiment_OSD)
