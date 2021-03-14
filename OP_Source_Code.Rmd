@@ -162,6 +162,7 @@ WORKING_DIR <- 'C:/R/Github/JGIS_Policing_COVID-19'
 #setting working directory
 setwd(WORKING_DIR)
 
+library(opitools)
 library(twitteR) #for setting up Twitter authorization
 library(rtweet) #for creating Twitter Authorization Token(S).
 library(dplyr) #for data manipulation and analysis
@@ -276,7 +277,7 @@ rm(list=ls()[! ls() %in%
   c("data_")])
 
 #read in the PFA-location lookup table
-location <- read.csv(file="/data/PoliceForce_location.csv", sep=",", head=TRUE)
+location <- read.csv(file=paste(WORKING_DIR, "/data/PoliceForce_location.csv", sep=""), sep=",", head=TRUE)
 
 #preview
 head(location)
