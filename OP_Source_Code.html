@@ -454,7 +454,7 @@ h3 { /* Header 3 */
 <!-- title: "An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – " -->
 <!-- subtitle: "Assessing COVID-19 Pandemic in Space-Time using Twitter Data" -->
 <!-- author: "Monsuru Adepeju" -->
-<!-- date: '14 March, 2021 (15:07)' -->
+<!-- date: '14 March, 2021 (15:38)' -->
 <!-- output: -->
 <!--   html_document:  -->
 <!--     toc: yes -->
@@ -472,7 +472,7 @@ h3 { /* Header 3 */
 <!-- --- -->
 <div id="preface" class="section level1">
 <h1>Preface</h1>
-<p><em>This is the accompanying source code for the paper ‘An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data’, published in the Journal of Geographical Information System. Certain parts of this source code, including the calculation of opinion scores and simulation of expectation distribution, were later built into an R package named <code>Opitools</code>, which is available on <code>CRAN</code>. The building of the package happened when the article was actively under review. In the spirit of reproducibility, we will present, in this document, the actual codes that was used to conduct the original research, rather than the functions from the <code>Opitools</code> package. However, we highlight, at different sections of this document, different functions from the <code>Opitools</code> package that can be used to generate the same outputs as the section in question</em>.</p>
+<p><em>This is the accompanying source code for the paper ‘An Analytical Framework for Measuring Inequalities in the Public Opinions on Policing – Assessing COVID-19 Pandemic in Space-Time using Twitter Data’, published in the Journal of Geographical Information System. Certain parts of this source code, including the calculation of opinion scores and simulation of expectation distribution, were later built into an R package named <code>Opitools</code>, which is available on <code>CRAN</code>. The building of the package happened when the article was actively under review. In the spirit of reproducibility, we will present, in this document, the actual codes that was used to conduct the original research, rather than the functions from the <code>Opitools</code> package. However, we highlight, at different sections of this document (tagged as <code>Opitools Package Reference: #</code>), different functions from the <code>Opitools</code> package that can be used to generate the same outputs as the section in question</em>.</p>
 </div>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
@@ -722,96 +722,110 @@ h3 { /* Header 3 */
 <a class="sourceLine" id="cb4-78" title="78">    placeTwt_no_keyword &lt;-<span class="st"> </span><span class="kw">data.frame</span>(placeTwt<span class="op">$</span>text) <span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb4-79" title="79"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(stringr<span class="op">::</span><span class="kw">str_detect</span>(text, <span class="st">&#39;pandemic|pandemics|lockdown|lockdowns|corona|coronavirus|covid|covid19|covid-19|virus|viruses|quarantine|infect|infects|infecting|infected&#39;</span>, <span class="dt">negate=</span><span class="ot">TRUE</span>))</a>
 <a class="sourceLine" id="cb4-80" title="80">    </a>
-<a class="sourceLine" id="cb4-81" title="81">    <span class="co">#create the id field and drop text field</span></a>
-<a class="sourceLine" id="cb4-82" title="82">    placeTwt_keyword_exist<span class="op">$</span>ID &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="kw">nrow</span>(placeTwt_keyword_exist)) </a>
-<a class="sourceLine" id="cb4-83" title="83">    </a>
-<a class="sourceLine" id="cb4-84" title="84">    <span class="co">#do sentiment analysis and also detect negated sentiment for </span></a>
-<a class="sourceLine" id="cb4-85" title="85">    <span class="co">#tweets with pandemic keywords</span></a>
-<a class="sourceLine" id="cb4-86" title="86">    token_neg_exist &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(placeTwt_keyword_exist) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-87" title="87"><span class="st">      </span><span class="co">#unnest_tokens(word, text)%&gt;%</span></a>
-<a class="sourceLine" id="cb4-88" title="88"><span class="st">      </span><span class="kw">unnest_tokens</span>(bigram, text, <span class="dt">token =</span> <span class="st">&quot;ngrams&quot;</span>, <span class="dt">n =</span> <span class="dv">2</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-89" title="89"><span class="st">      </span><span class="kw">separate</span>(bigram, <span class="kw">c</span>(<span class="st">&quot;word1&quot;</span>, <span class="st">&quot;word2&quot;</span>), <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-90" title="90"><span class="st">      </span><span class="kw">as.data.frame</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-91" title="91"><span class="st">      </span><span class="co">#filter the preceeding by the &#39;negation&#39; word</span></a>
-<a class="sourceLine" id="cb4-92" title="92"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(word1 <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;not&quot;</span>, <span class="st">&quot;never&quot;</span>, <span class="st">&quot;no&quot;</span>, <span class="st">&quot;without&quot;</span>)) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-93" title="93"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">neg =</span> <span class="kw">paste</span>(word1, word2, <span class="dt">sep=</span><span class="st">&quot; &quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#get sentiment score</span></a>
-<a class="sourceLine" id="cb4-94" title="94"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word  =</span> word2)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-95" title="95"><span class="st">      </span><span class="kw">left_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#</span></a>
-<a class="sourceLine" id="cb4-96" title="96"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(ID, neg, value)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-97" title="97"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value2 =</span> value <span class="op">*</span><span class="st"> </span><span class="dv">2</span>)<span class="op">%&gt;%</span><span class="co">#reverse the score (and multiply by 2)</span></a>
-<a class="sourceLine" id="cb4-98" title="98"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value =</span> value2)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-99" title="99"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(value2))<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-100" title="100"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word=</span>neg)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-101" title="101"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(value))<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-102" title="102"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;exist&quot;</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-103" title="103"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-104" title="104"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])</a>
-<a class="sourceLine" id="cb4-105" title="105">    </a>
-<a class="sourceLine" id="cb4-106" title="106">    placeTwt_all_DATA_afinn_exist &lt;-<span class="st"> </span>placeTwt_keyword_exist <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-107" title="107"><span class="st">      </span><span class="kw">unnest_tokens</span>(word, text, <span class="dt">drop =</span> <span class="ot">FALSE</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-108" title="108"><span class="st">      </span><span class="kw">inner_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#join with the lexicon</span></a>
+<a class="sourceLine" id="cb4-81" title="81">    <span class="co">#Opitools Package Reference: #1</span></a>
+<a class="sourceLine" id="cb4-82" title="82">    <span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb4-83" title="83">    <span class="co">#The list of pandemic keywords can be found in &#39;Opitools&#39;</span></a>
+<a class="sourceLine" id="cb4-84" title="84">    <span class="co">#by typing &#39;covid_keys&#39; in the console after installing the package</span></a>
+<a class="sourceLine" id="cb4-85" title="85">    <span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb4-86" title="86">    </a>
+<a class="sourceLine" id="cb4-87" title="87">    </a>
+<a class="sourceLine" id="cb4-88" title="88">    <span class="co">#create the id field and drop text field</span></a>
+<a class="sourceLine" id="cb4-89" title="89">    placeTwt_keyword_exist<span class="op">$</span>ID &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="kw">nrow</span>(placeTwt_keyword_exist)) </a>
+<a class="sourceLine" id="cb4-90" title="90">    </a>
+<a class="sourceLine" id="cb4-91" title="91">    <span class="co">#do sentiment analysis and also detect negated sentiment for </span></a>
+<a class="sourceLine" id="cb4-92" title="92">    <span class="co">#tweets with pandemic keywords</span></a>
+<a class="sourceLine" id="cb4-93" title="93">    token_neg_exist &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(placeTwt_keyword_exist) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-94" title="94"><span class="st">      </span><span class="co">#unnest_tokens(word, text)%&gt;%</span></a>
+<a class="sourceLine" id="cb4-95" title="95"><span class="st">      </span><span class="kw">unnest_tokens</span>(bigram, text, <span class="dt">token =</span> <span class="st">&quot;ngrams&quot;</span>, <span class="dt">n =</span> <span class="dv">2</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-96" title="96"><span class="st">      </span><span class="kw">separate</span>(bigram, <span class="kw">c</span>(<span class="st">&quot;word1&quot;</span>, <span class="st">&quot;word2&quot;</span>), <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-97" title="97"><span class="st">      </span><span class="kw">as.data.frame</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-98" title="98"><span class="st">      </span><span class="co">#filter the preceeding by the &#39;negation&#39; word</span></a>
+<a class="sourceLine" id="cb4-99" title="99"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(word1 <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;not&quot;</span>, <span class="st">&quot;never&quot;</span>, <span class="st">&quot;no&quot;</span>, <span class="st">&quot;without&quot;</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-100" title="100"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">neg =</span> <span class="kw">paste</span>(word1, word2, <span class="dt">sep=</span><span class="st">&quot; &quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#get sentiment score</span></a>
+<a class="sourceLine" id="cb4-101" title="101"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word  =</span> word2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-102" title="102"><span class="st">      </span><span class="kw">left_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#</span></a>
+<a class="sourceLine" id="cb4-103" title="103"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(ID, neg, value)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-104" title="104"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value2 =</span> value <span class="op">*</span><span class="st"> </span><span class="dv">2</span>)<span class="op">%&gt;%</span><span class="co">#reverse the score (and multiply by 2)</span></a>
+<a class="sourceLine" id="cb4-105" title="105"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value =</span> value2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-106" title="106"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(value2))<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-107" title="107"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word=</span>neg)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-108" title="108"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(value))<span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb4-109" title="109"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;exist&quot;</span>)<span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb4-110" title="110"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-111" title="111"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])<span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb4-112" title="112"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(text))<span class="co">#drop text</span></a>
-<a class="sourceLine" id="cb4-113" title="113">    </a>
-<a class="sourceLine" id="cb4-114" title="114">    <span class="co">#create the id field and drop text field</span></a>
-<a class="sourceLine" id="cb4-115" title="115">    placeTwt_all_DATA_afinn_exist &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_exist,</a>
-<a class="sourceLine" id="cb4-116" title="116">                                                      token_neg_exist))</a>
-<a class="sourceLine" id="cb4-117" title="117">  </a>
-<a class="sourceLine" id="cb4-118" title="118">    <span class="co">#create the sentiment data (bing)</span></a>
-<a class="sourceLine" id="cb4-119" title="119">    placeTwt_no_keyword<span class="op">$</span>ID &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="kw">nrow</span>(placeTwt_no_keyword)) <span class="co">#create an id field</span></a>
-<a class="sourceLine" id="cb4-120" title="120">    <span class="co">#get an ngram (2-ngrame)</span></a>
-<a class="sourceLine" id="cb4-121" title="121">    </a>
-<a class="sourceLine" id="cb4-122" title="122">    <span class="co">#do sentiment analysis and also detect negated sentiment for </span></a>
-<a class="sourceLine" id="cb4-123" title="123">    <span class="co">#tweets with no pandemic keywords</span></a>
-<a class="sourceLine" id="cb4-124" title="124">    token_neg_no_keyword &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(placeTwt_no_keyword) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-125" title="125"><span class="st">      </span><span class="co">#unnest_tokens(word, text)%&gt;%</span></a>
-<a class="sourceLine" id="cb4-126" title="126"><span class="st">      </span><span class="kw">unnest_tokens</span>(bigram, text, <span class="dt">token =</span> <span class="st">&quot;ngrams&quot;</span>, <span class="dt">n =</span> <span class="dv">2</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-127" title="127"><span class="st">      </span><span class="kw">separate</span>(bigram, <span class="kw">c</span>(<span class="st">&quot;word1&quot;</span>, <span class="st">&quot;word2&quot;</span>), <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-128" title="128"><span class="st">      </span><span class="kw">as.data.frame</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-129" title="129"><span class="st">      </span><span class="co">#filter the preceeding by the &#39;negation&#39; word</span></a>
-<a class="sourceLine" id="cb4-130" title="130"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(word1 <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;not&quot;</span>, <span class="st">&quot;never&quot;</span>, <span class="st">&quot;no&quot;</span>, <span class="st">&quot;without&quot;</span>)) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-131" title="131"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">neg =</span> <span class="kw">paste</span>(word1, word2, <span class="dt">sep=</span><span class="st">&quot; &quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#get sentiment score</span></a>
-<a class="sourceLine" id="cb4-132" title="132"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word  =</span> word2)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-133" title="133"><span class="st">      </span><span class="kw">left_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#</span></a>
-<a class="sourceLine" id="cb4-134" title="134"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(ID, neg, value)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-135" title="135"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value2 =</span> value <span class="op">*</span><span class="st"> </span><span class="dv">2</span>)<span class="op">%&gt;%</span><span class="co">#reverse the score (and multiply by 2)</span></a>
-<a class="sourceLine" id="cb4-136" title="136"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value =</span> value2)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-137" title="137"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(value2))<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-138" title="138"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word=</span>neg)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-139" title="139"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(value))<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-140" title="140"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;exist&quot;</span>)<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-141" title="141"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-142" title="142"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])</a>
-<a class="sourceLine" id="cb4-143" title="143">    </a>
-<a class="sourceLine" id="cb4-144" title="144">    placeTwt_all_DATA_afinn_absent &lt;-<span class="st"> </span>placeTwt_no_keyword <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-145" title="145"><span class="st">      </span><span class="kw">unnest_tokens</span>(word, text, <span class="dt">drop =</span> <span class="ot">FALSE</span>) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-146" title="146"><span class="st">      </span><span class="kw">inner_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#join with the lexicon</span></a>
-<a class="sourceLine" id="cb4-147" title="147"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;absent&quot;</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-111" title="111"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])</a>
+<a class="sourceLine" id="cb4-112" title="112">    </a>
+<a class="sourceLine" id="cb4-113" title="113">    placeTwt_all_DATA_afinn_exist &lt;-<span class="st"> </span>placeTwt_keyword_exist <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-114" title="114"><span class="st">      </span><span class="kw">unnest_tokens</span>(word, text, <span class="dt">drop =</span> <span class="ot">FALSE</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-115" title="115"><span class="st">      </span><span class="kw">inner_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#join with the lexicon</span></a>
+<a class="sourceLine" id="cb4-116" title="116"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;exist&quot;</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-117" title="117"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-118" title="118"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])<span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb4-119" title="119"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(text))<span class="co">#drop text</span></a>
+<a class="sourceLine" id="cb4-120" title="120">    </a>
+<a class="sourceLine" id="cb4-121" title="121">    <span class="co">#create the id field and drop text field</span></a>
+<a class="sourceLine" id="cb4-122" title="122">    placeTwt_all_DATA_afinn_exist &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_exist,</a>
+<a class="sourceLine" id="cb4-123" title="123">                                                      token_neg_exist))</a>
+<a class="sourceLine" id="cb4-124" title="124">  </a>
+<a class="sourceLine" id="cb4-125" title="125">    <span class="co">#create the sentiment data (bing)</span></a>
+<a class="sourceLine" id="cb4-126" title="126">    placeTwt_no_keyword<span class="op">$</span>ID &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="kw">nrow</span>(placeTwt_no_keyword)) <span class="co">#create an id field</span></a>
+<a class="sourceLine" id="cb4-127" title="127">    <span class="co">#get an ngram (2-ngrame)</span></a>
+<a class="sourceLine" id="cb4-128" title="128">    </a>
+<a class="sourceLine" id="cb4-129" title="129">    <span class="co">#do sentiment analysis and also detect negated sentiment for </span></a>
+<a class="sourceLine" id="cb4-130" title="130">    <span class="co">#tweets with no pandemic keywords</span></a>
+<a class="sourceLine" id="cb4-131" title="131">    token_neg_no_keyword &lt;-<span class="st"> </span><span class="kw">as_tibble</span>(placeTwt_no_keyword) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-132" title="132"><span class="st">      </span><span class="co">#unnest_tokens(word, text)%&gt;%</span></a>
+<a class="sourceLine" id="cb4-133" title="133"><span class="st">      </span><span class="kw">unnest_tokens</span>(bigram, text, <span class="dt">token =</span> <span class="st">&quot;ngrams&quot;</span>, <span class="dt">n =</span> <span class="dv">2</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-134" title="134"><span class="st">      </span><span class="kw">separate</span>(bigram, <span class="kw">c</span>(<span class="st">&quot;word1&quot;</span>, <span class="st">&quot;word2&quot;</span>), <span class="dt">sep =</span> <span class="st">&quot; &quot;</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-135" title="135"><span class="st">      </span><span class="kw">as.data.frame</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-136" title="136"><span class="st">      </span><span class="co">#filter the preceeding by the &#39;negation&#39; word</span></a>
+<a class="sourceLine" id="cb4-137" title="137"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(word1 <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;not&quot;</span>, <span class="st">&quot;never&quot;</span>, <span class="st">&quot;no&quot;</span>, <span class="st">&quot;without&quot;</span>)) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-138" title="138"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">neg =</span> <span class="kw">paste</span>(word1, word2, <span class="dt">sep=</span><span class="st">&quot; &quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#get sentiment score</span></a>
+<a class="sourceLine" id="cb4-139" title="139"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word  =</span> word2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-140" title="140"><span class="st">      </span><span class="kw">left_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#</span></a>
+<a class="sourceLine" id="cb4-141" title="141"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(ID, neg, value)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-142" title="142"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value2 =</span> value <span class="op">*</span><span class="st"> </span><span class="dv">2</span>)<span class="op">%&gt;%</span><span class="co">#reverse the score (and multiply by 2)</span></a>
+<a class="sourceLine" id="cb4-143" title="143"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(<span class="dt">value =</span> value2)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-144" title="144"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(value2))<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-145" title="145"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="dt">word=</span>neg)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-146" title="146"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(value))<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-147" title="147"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;exist&quot;</span>)<span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb4-148" title="148"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-149" title="149"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])<span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb4-150" title="150"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(text))</a>
-<a class="sourceLine" id="cb4-151" title="151">    </a>
-<a class="sourceLine" id="cb4-152" title="152">    <span class="co">#join the two observed sentiment document (OSD) documents</span></a>
-<a class="sourceLine" id="cb4-153" title="153">    placeTwt_all_DATA_afinn_absent &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_absent,</a>
-<a class="sourceLine" id="cb4-154" title="154">                                                       token_neg_no_keyword))</a>
-<a class="sourceLine" id="cb4-155" title="155">    </a>
-<a class="sourceLine" id="cb4-156" title="156">    placeTwt_all_DATA_afinn_observed &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_exist, placeTwt_all_DATA_afinn_absent))</a>
-<a class="sourceLine" id="cb4-157" title="157">    </a>
-<a class="sourceLine" id="cb4-158" title="158">    tweet_container_afinn &lt;-<span class="st"> </span><span class="kw">rbind</span>(tweet_container_afinn, placeTwt_all_DATA_afinn_observed)</a>
-<a class="sourceLine" id="cb4-159" title="159">    </a>
-<a class="sourceLine" id="cb4-160" title="160">  }</a>
-<a class="sourceLine" id="cb4-161" title="161">  </a>
-<a class="sourceLine" id="cb4-162" title="162">  <span class="kw">flush.console</span>()</a>
-<a class="sourceLine" id="cb4-163" title="163">  <span class="kw">print</span>(<span class="kw">paste</span>(i, z, <span class="st">&quot; | &quot;</span>))</a>
-<a class="sourceLine" id="cb4-164" title="164">  </a>
-<a class="sourceLine" id="cb4-165" title="165">  <span class="co">#write the OSD for the current PFA into the `output` directory</span></a>
-<a class="sourceLine" id="cb4-166" title="166">  <span class="kw">write.table</span>(tweet_container_afinn, <span class="dt">file =</span> <span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/&quot;</span>, </a>
-<a class="sourceLine" id="cb4-167" title="167">                                                  <span class="st">&quot;police_cleaned_&quot;</span>, Pf_names_regions_uni[i], <span class="st">&quot;_all_DATA_afinn_observed_ts&quot;</span>, </a>
-<a class="sourceLine" id="cb4-168" title="168">                                                  <span class="st">&quot;.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb4-169" title="169">  </a>
-<a class="sourceLine" id="cb4-170" title="170">}</a></code></pre></div>
+<a class="sourceLine" id="cb4-149" title="149"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])</a>
+<a class="sourceLine" id="cb4-150" title="150">    </a>
+<a class="sourceLine" id="cb4-151" title="151">    placeTwt_all_DATA_afinn_absent &lt;-<span class="st"> </span>placeTwt_no_keyword <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-152" title="152"><span class="st">      </span><span class="kw">unnest_tokens</span>(word, text, <span class="dt">drop =</span> <span class="ot">FALSE</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-153" title="153"><span class="st">      </span><span class="kw">inner_join</span>(<span class="kw">get_sentiments</span>(<span class="st">&quot;afinn&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span><span class="co">#join with the lexicon</span></a>
+<a class="sourceLine" id="cb4-154" title="154"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">pandem_keyword=</span><span class="st">&quot;absent&quot;</span>)<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-155" title="155"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">country=</span>Pf_names_regions_uni[i])<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-156" title="156"><span class="st">      </span><span class="kw">mutate</span>(<span class="dt">Period =</span> periods[z])<span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb4-157" title="157"><span class="st">      </span>dplyr<span class="op">::</span><span class="kw">select</span>(<span class="op">-</span><span class="kw">c</span>(text))</a>
+<a class="sourceLine" id="cb4-158" title="158">    </a>
+<a class="sourceLine" id="cb4-159" title="159">    <span class="co">#Opitools Package Reference: #2</span></a>
+<a class="sourceLine" id="cb4-160" title="160">    <span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb4-161" title="161">    <span class="co">#The above chunks included components of </span></a>
+<a class="sourceLine" id="cb4-162" title="162">    <span class="co">#`opi_score` and `opi_impact` function.</span></a>
+<a class="sourceLine" id="cb4-163" title="163">    <span class="co">#-----------------------------------    </span></a>
+<a class="sourceLine" id="cb4-164" title="164">    </a>
+<a class="sourceLine" id="cb4-165" title="165"></a>
+<a class="sourceLine" id="cb4-166" title="166">    <span class="co">#join the two observed sentiment document (OSD) documents</span></a>
+<a class="sourceLine" id="cb4-167" title="167">    placeTwt_all_DATA_afinn_absent &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_absent,</a>
+<a class="sourceLine" id="cb4-168" title="168">                                                       token_neg_no_keyword))</a>
+<a class="sourceLine" id="cb4-169" title="169">    </a>
+<a class="sourceLine" id="cb4-170" title="170">    placeTwt_all_DATA_afinn_observed &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">rbind</span>(placeTwt_all_DATA_afinn_exist, placeTwt_all_DATA_afinn_absent))</a>
+<a class="sourceLine" id="cb4-171" title="171">    </a>
+<a class="sourceLine" id="cb4-172" title="172">    tweet_container_afinn &lt;-<span class="st"> </span><span class="kw">rbind</span>(tweet_container_afinn, placeTwt_all_DATA_afinn_observed)</a>
+<a class="sourceLine" id="cb4-173" title="173">    </a>
+<a class="sourceLine" id="cb4-174" title="174">  }</a>
+<a class="sourceLine" id="cb4-175" title="175">  </a>
+<a class="sourceLine" id="cb4-176" title="176">  <span class="kw">flush.console</span>()</a>
+<a class="sourceLine" id="cb4-177" title="177">  <span class="kw">print</span>(<span class="kw">paste</span>(i, z, <span class="st">&quot; | &quot;</span>))</a>
+<a class="sourceLine" id="cb4-178" title="178">  </a>
+<a class="sourceLine" id="cb4-179" title="179">  <span class="co">#write the OSD for the current PFA into the `output` directory</span></a>
+<a class="sourceLine" id="cb4-180" title="180">  <span class="kw">write.table</span>(tweet_container_afinn, <span class="dt">file =</span> <span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/&quot;</span>, </a>
+<a class="sourceLine" id="cb4-181" title="181">                                                  <span class="st">&quot;police_cleaned_&quot;</span>, Pf_names_regions_uni[i], <span class="st">&quot;_all_DATA_afinn_observed_ts&quot;</span>, </a>
+<a class="sourceLine" id="cb4-182" title="182">                                                  <span class="st">&quot;.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb4-183" title="183">  </a>
+<a class="sourceLine" id="cb4-184" title="184">}</a></code></pre></div>
 </div>
 <div id="compute-the-opinion-scores-and-p-values" class="section level1">
 <h1>Compute the Opinion Scores and p-values</h1>
@@ -995,38 +1009,45 @@ h3 { /* Header 3 */
 <a class="sourceLine" id="cb5-165" title="165">  </a>
 <a class="sourceLine" id="cb5-166" title="166">  all_Regional_afinn_combined &lt;-<span class="st"> </span><span class="kw">rbind</span>(all_Regional_afinn_combined, Regional_afinn_combined <span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb5-167" title="167"><span class="st">                                         </span><span class="kw">mutate</span>(<span class="dt">Region =</span> regions[i]))</a>
-<a class="sourceLine" id="cb5-168" title="168">  </a>
-<a class="sourceLine" id="cb5-169" title="169">  <span class="kw">flush.console</span>()</a>
-<a class="sourceLine" id="cb5-170" title="170">  <span class="kw">print</span>(i)</a>
-<a class="sourceLine" id="cb5-171" title="171">}</a>
-<a class="sourceLine" id="cb5-172" title="172"></a>
-<a class="sourceLine" id="cb5-173" title="173"><span class="co">#end time</span></a>
-<a class="sourceLine" id="cb5-174" title="174">t2 &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
-<a class="sourceLine" id="cb5-175" title="175"></a>
-<a class="sourceLine" id="cb5-176" title="176"><span class="co">#run time</span></a>
-<a class="sourceLine" id="cb5-177" title="177">t_diff &lt;-<span class="st"> </span>t2 <span class="op">-</span>t1</a>
-<a class="sourceLine" id="cb5-178" title="178"></a>
-<a class="sourceLine" id="cb5-179" title="179"><span class="co">#Previewing the results</span></a>
-<a class="sourceLine" id="cb5-180" title="180"><span class="co">#read.table</span></a>
-<a class="sourceLine" id="cb5-181" title="181"></a>
-<a class="sourceLine" id="cb5-182" title="182"><span class="co">#Export the &#39;Observation&#39; table (Opinion scores for time steps 1, 2, 3, called &#39;Periods&#39;)</span></a>
-<a class="sourceLine" id="cb5-183" title="183"><span class="kw">write.table</span>(all_Regional_afinn_combined, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
-<a class="sourceLine" id="cb5-184" title="184">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-185" title="185"><span class="co">#P-values and position table for time step 1</span></a>
-<a class="sourceLine" id="cb5-186" title="186"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">1</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_1.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
-<a class="sourceLine" id="cb5-187" title="187">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-188" title="188"><span class="kw">write.table</span>(all_p_signs_<span class="dv">1</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_1.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
-<a class="sourceLine" id="cb5-189" title="189">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-190" title="190"><span class="co">#P-values and position table for time step 2</span></a>
-<a class="sourceLine" id="cb5-191" title="191"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">2</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_2.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
-<a class="sourceLine" id="cb5-192" title="192">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-193" title="193"><span class="kw">write.table</span>(all_p_signs_<span class="dv">2</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_2.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
+<a class="sourceLine" id="cb5-168" title="168"> </a>
+<a class="sourceLine" id="cb5-169" title="169"><span class="co">#Opitools Package Reference: #3</span></a>
+<a class="sourceLine" id="cb5-170" title="170"><span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb5-171" title="171"><span class="co">#The above chunks included components of </span></a>
+<a class="sourceLine" id="cb5-172" title="172"><span class="co">#`opi_score`, `opi_sim` and `opi_impact` functions.</span></a>
+<a class="sourceLine" id="cb5-173" title="173"><span class="co">#-----------------------------------    </span></a>
+<a class="sourceLine" id="cb5-174" title="174">  </a>
+<a class="sourceLine" id="cb5-175" title="175">  </a>
+<a class="sourceLine" id="cb5-176" title="176">  <span class="kw">flush.console</span>()</a>
+<a class="sourceLine" id="cb5-177" title="177">  <span class="kw">print</span>(i)</a>
+<a class="sourceLine" id="cb5-178" title="178">}</a>
+<a class="sourceLine" id="cb5-179" title="179"></a>
+<a class="sourceLine" id="cb5-180" title="180"><span class="co">#end time</span></a>
+<a class="sourceLine" id="cb5-181" title="181">t2 &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()</a>
+<a class="sourceLine" id="cb5-182" title="182"></a>
+<a class="sourceLine" id="cb5-183" title="183"><span class="co">#run time</span></a>
+<a class="sourceLine" id="cb5-184" title="184">t_diff &lt;-<span class="st"> </span>t2 <span class="op">-</span>t1</a>
+<a class="sourceLine" id="cb5-185" title="185"></a>
+<a class="sourceLine" id="cb5-186" title="186"><span class="co">#Previewing the results</span></a>
+<a class="sourceLine" id="cb5-187" title="187"><span class="co">#read.table</span></a>
+<a class="sourceLine" id="cb5-188" title="188"></a>
+<a class="sourceLine" id="cb5-189" title="189"><span class="co">#Export the &#39;Observation&#39; table (Opinion scores for time steps 1, 2, 3, called &#39;Periods&#39;)</span></a>
+<a class="sourceLine" id="cb5-190" title="190"><span class="kw">write.table</span>(all_Regional_afinn_combined, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_obs_exp_Sentiment_ts_1_2_3_ALL.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
+<a class="sourceLine" id="cb5-191" title="191">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb5-192" title="192"><span class="co">#P-values and position table for time step 1</span></a>
+<a class="sourceLine" id="cb5-193" title="193"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">1</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_1.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
 <a class="sourceLine" id="cb5-194" title="194">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-195" title="195"><span class="co">#P-values and position table for time step 3</span></a>
-<a class="sourceLine" id="cb5-196" title="196"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">3</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_3.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>),</a>
-<a class="sourceLine" id="cb5-197" title="197">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
-<a class="sourceLine" id="cb5-198" title="198"><span class="kw">write.table</span>(all_p_signs_<span class="dv">3</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_3.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>),</a>
-<a class="sourceLine" id="cb5-199" title="199">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
+<a class="sourceLine" id="cb5-195" title="195"><span class="kw">write.table</span>(all_p_signs_<span class="dv">1</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_1.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
+<a class="sourceLine" id="cb5-196" title="196">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb5-197" title="197"><span class="co">#P-values and position table for time step 2</span></a>
+<a class="sourceLine" id="cb5-198" title="198"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">2</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_2.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
+<a class="sourceLine" id="cb5-199" title="199">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb5-200" title="200"><span class="kw">write.table</span>(all_p_signs_<span class="dv">2</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_2.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>), </a>
+<a class="sourceLine" id="cb5-201" title="201">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb5-202" title="202"><span class="co">#P-values and position table for time step 3</span></a>
+<a class="sourceLine" id="cb5-203" title="203"><span class="kw">write.table</span>(all_pvalueS_<span class="dv">3</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_pvalue_Sentiment_ts_3.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>),</a>
+<a class="sourceLine" id="cb5-204" title="204">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a>
+<a class="sourceLine" id="cb5-205" title="205"><span class="kw">write.table</span>(all_p_signs_<span class="dv">3</span>, <span class="dt">file=</span><span class="kw">paste</span>(WORKING_DIR, <span class="st">&quot;/outputs/all_sentiment_signs_ts_3.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>),</a>
+<a class="sourceLine" id="cb5-206" title="206">            <span class="dt">sep=</span><span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
 </div>
 <div id="plotting" class="section level1">
 <h1>Plotting</h1>
@@ -1281,7 +1302,13 @@ h3 { /* Header 3 */
 <a class="sourceLine" id="cb6-245" title="245">    <span class="co">#theme_radar()</span></a>
 <a class="sourceLine" id="cb6-246" title="246">  }</a>
 <a class="sourceLine" id="cb6-247" title="247"></a>
-<a class="sourceLine" id="cb6-248" title="248">}</a></code></pre></div>
+<a class="sourceLine" id="cb6-248" title="248">}</a>
+<a class="sourceLine" id="cb6-249" title="249"></a>
+<a class="sourceLine" id="cb6-250" title="250"><span class="co">#Opitools Package Reference: #4</span></a>
+<a class="sourceLine" id="cb6-251" title="251"><span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb6-252" title="252"><span class="co">#The above chunks form a component of </span></a>
+<a class="sourceLine" id="cb6-253" title="253"><span class="co">#`opi_impact` functions.</span></a>
+<a class="sourceLine" id="cb6-254" title="254"><span class="co">#-----------------------------------    </span></a></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="co">#visualization</span></a>
 <a class="sourceLine" id="cb7-2" title="2"><span class="kw">ggarrange</span>(</a>
 <a class="sourceLine" id="cb7-3" title="3">  North_West, North_East, Yorkshire_and_the_Humber, West_Midlands,</a>
@@ -1627,7 +1654,13 @@ Figure 6: Proportion of tweet types and sentiments per PFA at time step 3
 <a class="sourceLine" id="cb14-108" title="108">final_p_class_scores &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">cbind</span>(<span class="dt">PFA=</span>sent_pvalues_sign_scores_<span class="dv">1</span>_<span class="dv">2</span>_<span class="dv">3</span>[,<span class="kw">c</span>(<span class="dv">1</span>)], p_class, scores))</a>
 <a class="sourceLine" id="cb14-109" title="109"></a>
 <a class="sourceLine" id="cb14-110" title="110"><span class="co">#preview file</span></a>
-<a class="sourceLine" id="cb14-111" title="111">final_p_class_scores <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">head</span>()</a></code></pre></div>
+<a class="sourceLine" id="cb14-111" title="111">final_p_class_scores <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">head</span>()</a>
+<a class="sourceLine" id="cb14-112" title="112"></a>
+<a class="sourceLine" id="cb14-113" title="113"><span class="co">#Opitools Package Reference: #5</span></a>
+<a class="sourceLine" id="cb14-114" title="114"><span class="co">#-----------------------------------</span></a>
+<a class="sourceLine" id="cb14-115" title="115"><span class="co">#The above chunks (i.e. p-value calculation)</span></a>
+<a class="sourceLine" id="cb14-116" title="116"><span class="co">#form a component of `opi_impact` functions </span></a>
+<a class="sourceLine" id="cb14-117" title="117"><span class="co">#-----------------------------------    </span></a></code></pre></div>
 </div>
 <div id="plotting-1" class="section level2">
 <h2>Plotting</h2>
